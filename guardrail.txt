@@ -53,7 +53,7 @@ You will be provided with two structural configuration schemas. You must read, u
 - Ingest Bucket 5 (`closing_invitation`, `target_conversion_label`) -> Bind to ClosingCallToAction. GSAP CTA scale/fade. Ambient gold particle field on canvas.
 
 ### EXCEPTION HANDLING ARCHITECTURE
-- Missing Data Fallback: If an optional field is blank, do not invent copy. Adjust vertical margin to absorb whitespace while preserving structural alignment.
+- Missing Data Fallback: If an unexpected data injection leaves an optional field blank (e.g., a missing `hook_context` sentence), do not invent copy. Instead, adjust the vertical typography margin automatically to absorb the whitespace while preserving structural alignment.
 - Media Failure Protocol: If an image URL fails to render, replace with an ambient glassmorphic structural card block using the primary design system palette.
 - 3D Asset Failure Protocol: If a GLTF/OBJ/Sketchfab asset fails to load, fall back to the default ambient particle field. Log the error to console but never show a broken canvas or blank space.
 - GSAP Failure Protocol: If ScrollTrigger fails to initialize (e.g., SSR environment), ensure all content is still visible at full opacity. Animations are enhancement, not requirement.

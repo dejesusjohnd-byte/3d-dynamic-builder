@@ -1,175 +1,182 @@
-import React, { useRef, useEffect, Suspense } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial } from '@react-three/drei';
-import * as THREE from 'three';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 /* ═══════════════════════════════════════════════════════════════
-   CLOSING PARTICLE FIELD — Gold ambient particles
+   THREE.JS GOLD PARTICLES SUB-ASSEMBLY (Internal Ambient Physics)
+   Rendered safely inside an isolated frame to eliminate local model crashes
    ═══════════════════════════════════════════════════════════════ */
-function ClosingParticles() {
-  const ref = useRef();
-  const positions = React.useMemo(() => {
+function GoldAmbientParticles() {
+  const pointsRef = useRef();
+
+  // Generate coordinate vertices mathematically for 350 gold dust points
+  const particlePositions = React.useMemo(() => {
     const arr = new Float32Array(350 * 3);
     for (let i = 0; i < 350; i++) {
-      arr[i * 3]     = (Math.random() - 0.5) * 60;
-      arr[i * 3 + 1] = (Math.random() - 0.5) * 60;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 30 - 10;
+      arr[i * 3]     = (Math.random() - 0.5) * 45; // Spread X
+      arr[i * 3 + 1] = (Math.random() - 0.5) * 45; // Spread Y
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 20 - 5; // Depth Z
     }
     return arr;
   }, []);
 
+  // Frame tick updates continuous rotation physics
   useFrame((state) => {
-    ref.current.rotation.y = state.clock.getElapsedTime() * 0.02;
-    ref.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.015) * 0.05;
+    const time = state.clock.getElapsedTime();
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y = time * 0.015;
+      pointsRef.current.rotation.x = Math.sin(time * 0.1) * 0.01;
+    }
   });
 
-  return (
-    <group ref={ref}>
-      <Points positions={positions} stride={3} frustumCulled={false}>
-        <PointMaterial
-          transparent
-          color="#c8a97e"
-          size={0.05}
-          sizeAttenuation
-          depthWrite={false}
-          opacity={0.35}
-        />
-      </Points>
-    </group>
+  return React.createElement('points', { ref: pointsRef },
+    React.createElement('bufferGeometry', null,
+      React.createElement('bufferAttribute', {
+        attach: 'attributes-position',
+        args: [particlePositions, 3]
+      })
+    ),
+    React.createElement('pointsMaterial', {
+      color: '#c8a97e',
+      size: 0.045,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.35,
+      blending: 2 // Additive Blending for a soft premium glow signature
+    })
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CLOSING CALL TO ACTION — Immersive Conversion Terminal
-   GSAP CTA transitions + gold particle field canvas
+   MASTERCLASS CLOSING TERMINAL — Immersive Conversion Core
+   Inspired by Portman: Absolute Restraint & Lasting Impressions
    ═══════════════════════════════════════════════════════════════ */
 export default function ClosingCallToAction({
   closing_invitation,
   target_conversion_label,
-  baseline_essentials = {},
+  corporate_copyright,
+  direct_contact_strings
 }) {
-  const { corporate_copyright, direct_contact_strings } = baseline_essentials;
-
   const sectionRef = useRef(null);
   const titleRef = useRef(null);
-  const ctaRef = useRef(null);
+  const actionButtonRef = useRef(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Title reveal — scale + fade
+      
+      // CINEMATIC SCALE REVEAL: Headline grows from 0.95 to 1 while shifting up sequentially
       gsap.fromTo(titleRef.current,
-        { opacity: 0, y: 30, scale: 0.95 },
+        { opacity: 0, scale: 0.95, y: 30, filter: 'blur(8px)' },
         {
-          opacity: 1, y: 0, scale: 1, duration: 1.2, ease: 'power3.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 70%' },
+          opacity: 1, scale: 1, y: 0, filter: 'blur(0px)',
+          duration: 1.5, ease: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 80%',
+            toggleActions: 'play none none reverse'
+          }
         }
       );
 
-      // CTA button reveal
-      gsap.fromTo(ctaRef.current,
+      // DELAYED CTA NODE SLIDE: Button arrives right after the core question settles
+      gsap.fromTo(actionButtonRef.current,
         { opacity: 0, y: 20 },
         {
-          opacity: 1, y: 0, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: sectionRef.current, start: 'top 60%' },
-          delay: 0.2,
+          opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.3,
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 80%',
+            toggleActions: 'play none none reverse'
+          }
         }
       );
+
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [closing_invitation]);
 
-  return (
-    <section
-      ref={sectionRef}
-      id="closing"
-      style={{
-        position: 'relative', width: '100vw', height: '100vh',
-        background: '#09090b', color: '#f4f4f5',
-        display: 'flex', flexDirection: 'column',
-        justifyContent: 'space-between', overflow: 'hidden',
-      }}
-    >
-      {/* Three.js Canvas — Z:0 */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 0, width: '100%', height: '100%',
-      }}>
-        <Canvas camera={{ position: [0, 0, 30], fov: 60 }}>
-          <Suspense fallback={null}>
-            <ClosingParticles />
-          </Suspense>
-        </Canvas>
-      </div>
+  return React.createElement('section', {
+    ref: sectionRef,
+    style: {
+      position: 'relative',
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: '#09090b',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    }
+  },
+    // LAYER 1: Ambient Three.js WebGL Particle Viewport Background
+    React.createElement('div', {
+      style: { position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }
+    },
+      React.createElement(Canvas, {
+        camera: { fov: 60, position: [0, 0, 10] },
+        gl: { antialias: true, alpha: true }
+      },
+        React.createElement(GoldAmbientParticles, null)
+      )
+    ),
 
-      {/* Top bar — Z:2 */}
-      <div style={{
-        width: '100%', padding: '3rem 4rem 0', display: 'flex',
-        justifyContent: 'space-between', alignItems: 'center', zIndex: 2,
-      }}>
-        <span style={{ fontSize: '0.7rem', letterSpacing: '0.25em', color: '#71717a' }}>
-          05 / Terminal Conversion
-        </span>
-        <div style={{ width: '100px', height: '1px', background: '#27272a' }} />
-      </div>
+    // CHAPTER HEADER BAR
+    React.createElement('div', {
+      style: { width: '100%', padding: '4rem 6rem 0', zIndex: 5, textAlign: 'center' }
+    },
+      React.createElement('div', { style: { width: '100%', height: '1px', backgroundColor: '#1c1c1e', marginBottom: '2.5rem' } }),
+      React.createElement('span', { className: 'chapter-label', style: { color: '#71717a' } }, "05 / FINAL TERMINAL")
+    ),
 
-      {/* Center content — Z:2 */}
-      <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        textAlign: 'center', padding: '0 10%', zIndex: 2,
-      }}>
-        <h2 ref={titleRef} style={{
+    // CENTERED CONVERSION PORTAL
+    React.createElement('div', {
+      style: { position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 2rem' }
+    },
+      React.createElement('h2', {
+        ref: titleRef,
+        style: {
           fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 600,
-          letterSpacing: '-0.02em', color: '#f4f4f5',
-          marginBottom: '2rem', maxWidth: '800px',
-          opacity: 0,
-        }}>
-          {closing_invitation || 'Initiate Scalable Integration.'}
-        </h2>
+          fontSize: 'calc(2.2rem + 1.8vw)', color: '#f4f4f5',
+          fontWeight: 400, lineHeight: 1.25, letterSpacing: '-0.02em', maxWidth: '850px', margin: '0 0 3.5rem'
+        }
+      }, closing_invitation || "Let's Shape the Evolution Together."),
 
-        <button
-          ref={ctaRef}
-          onMouseEnter={(e) => {
-            gsap.to(e.currentTarget, {
-              scale: 1.05, duration: 0.3, ease: 'power2.out',
-              boxShadow: '0 0 40px rgba(200,169,126,0.3)',
-            });
-          }}
-          onMouseLeave={(e) => {
-            gsap.to(e.currentTarget, {
-              scale: 1, duration: 0.3, ease: 'power2.out',
-              boxShadow: 'none',
-            });
-          }}
-          style={{
-            padding: '1.2rem 3.5rem', fontSize: '0.9rem', letterSpacing: '0.2em',
-            textTransform: 'uppercase', background: '#c8a97e', color: '#09090b',
-            border: 'none', cursor: 'pointer', fontWeight: 700,
-            transition: 'background 0.3s ease',
-            opacity: 0,
-          }}
-        >
-          {target_conversion_label || 'Commence'}
-        </button>
-      </div>
+      // PREMIUM CTA NODE LOOP
+      React.createElement('button', {
+        ref: actionButtonRef,
+        onMouseEnter: (e) => {
+          gsap.to(e.currentTarget, { scale: 1.05, duration: 0.35, ease: 'power2.out', boxShadow: '0 0 50px rgba(200, 169, 126, 0.25)' });
+        },
+        onMouseLeave: (e) => {
+          gsap.to(e.currentTarget, { scale: 1, duration: 0.35, ease: 'power2.out', boxShadow: 'none' });
+        },
+        style: {
+          padding: '1.2rem 4rem', fontSize: '0.85rem', letterSpacing: '0.25em',
+          textTransform: 'uppercase', background: '#c8a97e', color: '#09090b',
+          border: 'none', cursor: 'pointer', fontWeight: 700, borderRadius: '1px',
+          outline: 'none', transition: 'background 0.3s ease'
+        }
+      }, target_conversion_label || "Initiate Call")
+    ),
 
-      {/* Footer — Z:2 */}
-      <footer style={{
-        width: '100%', padding: '0 4rem 3rem', display: 'flex',
-        justifyContent: 'space-between', alignItems: 'center',
-        fontSize: '0.8rem', color: '#71717a', letterSpacing: '0.05em', zIndex: 2,
-      }}>
-        <div>{corporate_copyright || `© ${new Date().getFullYear()} Architectural Engine.`}</div>
-        {direct_contact_strings && (
-          <div style={{ display: 'flex', gap: '2rem', color: '#a1a1aa' }}>
-            <span>{direct_contact_strings}</span>
-          </div>
-        )}
-      </footer>
-    </section>
+    // MINIMAL COMPLIANCE FOOTER
+    React.createElement('footer', {
+      style: {
+        width: '100%', padding: '0 6rem 4rem', zIndex: 10,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        fontFamily: "'Inter', sans-serif", fontSize: '0.8rem', color: '#52525b', letterSpacing: '0.05em'
+      }
+    },
+      React.createElement('div', null, corporate_copyright || `© ${new Date().getFullYear()} ARCHITECTS OF COMPOSITION. ALL RIGHTS RESERVED.`),
+      React.createElement('div', { style: { display: 'flex', gap: '3rem' } },
+        React.createElement('span', null, direct_contact_strings || "STUDIO@PIPELINE.PREMIUM"),
+        React.createElement('a', { href: '#', style: { color: '#52525b', textDecoration: 'none' } }, "PRIVACY MATRIX")
+      )
+    )
   );
 }
