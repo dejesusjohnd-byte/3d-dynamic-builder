@@ -7,24 +7,396 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#09090b;--surface:#141416;--border:#27272a;--text:#f4f4f5;--text-dim:#a1a1aa;--text-muted:#71717a;--accent:#c8a97e;--serif:'Playfair Display',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--ease:cubic-bezier(.16,1,.3,1)}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);overflow-x:hidden;line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* ═══ LOADER ═══ */
+#loader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;background:var(--bg);transition:opacity 1s var(--ease),visibility 1s var(--ease)}
+#loader.done{opacity:0;visibility:hidden;pointer-events:none}
+#loader .spin{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loader p{font-size:.65rem;letter-spacing:.3em;text-transform:uppercase;color:var(--text-muted)}
+
+/* ═══ CANVASES ═══ */
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+/* ═══ SECTIONS ═══ */
+section{position:relative;width:100vw;overflow:hidden}
+
+/* ═══ HERO ═══ */
+#hero{height:100vh;display:flex;flex-direction:column;background:#09090b}
+#hero-canvas-wrap{position:absolute;inset:0;z-index:0}
+.hero-nav{position:absolute;top:0;left:0;width:100%;padding:1.5rem 3.5rem;display:flex;justify-content:space-between;align-items:center;z-index:10;mix-blend-mode:difference}
+.hero-nav img{height:24px;width:auto}
+.hero-nav-links{display:flex;gap:2.5rem;list-style:none}
+.hero-nav-links a{color:var(--text);text-decoration:none;font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;font-weight:400;opacity:.7;transition:opacity .4s}
+.hero-nav-links a:hover{opacity:1}
+.hero-nav-cta{color:var(--text);text-decoration:none;font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;padding:.6rem 1.4rem;border:1px solid rgba(255,255,255,.15);transition:border-color .4s,color .4s}
+.hero-nav-cta:hover{border-color:var(--accent);color:var(--accent)}
+.hero-inner{position:relative;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 10%;text-align:center;z-index:2}
+.hero-inner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(9,9,11,.5) 0%,transparent 70%);pointer-events:none}
+.hero-eyebrow{font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;font-weight:400;opacity:0;transform:translateY(20px);will-change:opacity,transform}
+.hero-title{font-family:var(--serif);font-size:clamp(2.5rem,6vw,5rem);font-weight:600;color:var(--text);letter-spacing:-.03em;line-height:1.1;max-width:900px;margin:0 0 1.5rem;opacity:0;transform:translateY(40px);will-change:opacity,transform}
+.hero-sub{font-size:clamp(.9rem,1.2vw,1.1rem);color:var(--text-dim);max-width:560px;line-height:1.7;font-weight:300;margin:0 0 3rem;opacity:0;transform:translateY(20px);will-change:opacity,transform}
+.hero-cta{display:inline-flex;align-items:center;padding:1rem 2.5rem;font-size:.85rem;letter-spacing:.15em;text-transform:uppercase;background:transparent;color:var(--accent);border:1px solid var(--accent);cursor:pointer;font-weight:500;opacity:0;transform:translateY(20px) scale(.95);will-change:opacity,transform,box-shadow;transition:background .4s,color .4s}
+.hero-cta:hover{background:var(--accent);color:var(--bg)}
+.hero-scroll{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:.5rem;opacity:0;will-change:opacity}
+.hero-scroll span{font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;color:var(--text-muted)}
+.hero-scroll-line{width:1px;height:50px;background:linear-gradient(to bottom,var(--accent),transparent)}
+
+/* ═══ COLLAGE ═══ */
+#collage{min-height:100vh;padding:12rem 4rem;display:flex;align-items:center;justify-content:center}
+.collage-inner{position:relative;width:100%;max-width:1200px;display:flex;flex-direction:column;align-items:center;z-index:2}
+.collage-chapter{font-size:.75rem;letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase;margin-bottom:3rem;display:block;opacity:0;transform:translateY(15px);will-change:opacity,transform}
+.collage-statement{font-family:var(--serif);font-size:clamp(1.5rem,3.5vw,2.75rem);font-weight:400;line-height:1.4;text-align:center;max-width:850px;color:var(--text);position:relative;z-index:10;margin:0;opacity:0;transform:translateY(40px);will-change:opacity,transform}
+.collage-statement .word{display:inline-block;opacity:0;transform:translateY(20px);will-change:opacity,transform}
+.collage-float{position:absolute;border-radius:4px;overflow:hidden;opacity:0;transform:scale(.92);will-change:opacity,transform,filter;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.collage-float img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(100%) contrast(1.05);transition:filter 1s var(--ease)}
+.collage-float.revealed img{filter:grayscale(60%) contrast(1.05)}
+.collage-f1{top:10%;left:3%;width:220px;height:280px;transform:rotate(-4deg) scale(.92)}
+.collage-f2{bottom:5%;right:2%;width:260px;height:340px;transform:rotate(3deg) scale(.92)}
+.collage-f3{top:5%;right:5%;width:200px;height:240px;transform:rotate(-2deg) scale(.92)}
+.collage-f4{bottom:8%;left:8%;width:240px;height:300px;transform:rotate(6deg) scale(.92)}
+
+/* ═══ OFFERINGS ═══ */
+#offerings{padding:10rem 4rem;display:flex;flex-direction:column;align-items:center}
+.offerings-header{width:100%;max-width:1400px;margin-bottom:5rem}
+.offerings-chapter{font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:1rem;opacity:0;transform:translateY(15px);will-change:opacity,transform}
+.offerings-title{font-family:var(--serif);font-size:clamp(1.8rem,3vw,2.5rem);font-weight:500;color:var(--text);opacity:0;transform:translateY(20px);will-change:opacity,transform}
+.offerings-divider{width:40px;height:1px;background:var(--border);margin-top:1.5rem}
+.offerings-grid{width:100%;max-width:1400px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border)}
+.offering-card{background:#09090b;padding:3.5rem 2.5rem;display:flex;flex-direction:column;justify-content:space-between;min-height:420px;opacity:0;transform:translateY(30px);will-change:opacity,transform}
+.offering-card-cover{width:100%;height:180px;overflow:hidden;margin-bottom:2.5rem;background:#18181b;position:relative}
+.offering-card-cover img{width:100%;height:100%;object-fit:cover;filter:grayscale(100%) contrast(1.1);transition:filter .6s var(--ease)}
+.offering-card:hover .offering-card-cover img{filter:grayscale(40%) contrast(1.1)}
+.offering-card-title{font-family:var(--serif);font-size:1.25rem;font-weight:500;margin-bottom:1rem;color:var(--text)}
+.offering-card-body{font-size:.9rem;color:var(--text-dim);line-height:1.7;font-weight:300}
+
+/* ═══ VALUE PAUSE ═══ */
+#value-pause{min-height:90vh;padding:6rem 4rem;display:flex;align-items:center;justify-content:center}
+.value-grid{width:100%;max-width:1400px;display:grid;grid-template-columns:1.2fr 1fr;gap:6rem;align-items:center}
+.value-left{display:flex;flex-direction:column;align-items:flex-start}
+.value-chapter{font-size:.75rem;letter-spacing:.2em;color:var(--text-muted);text-transform:uppercase;margin-bottom:2rem;display:block;opacity:0;transform:translateY(15px);will-change:opacity,transform}
+.value-headline{font-family:var(--serif);font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:500;line-height:1.3;color:var(--text);margin:0 0 2.5rem;opacity:0;will-change:opacity}
+.value-headline .char{display:inline-block;opacity:0;will-change:opacity}
+.value-body{font-size:1.05rem;color:var(--text-dim);line-height:1.7;font-weight:300;max-width:550px;margin:0;opacity:0;transform:translateY(20px);will-change:opacity,transform}
+.value-img-frame{width:100%;height:500px;background:#18181b;overflow:hidden;position:relative}
+.value-img-frame img{width:100%;height:100%;object-fit:cover;filter:grayscale(100%) contrast(1.05);opacity:0;transform:scale(1.1);will-change:opacity,transform;transition:opacity 1.5s var(--ease),transform 1.5s var(--ease)}
+.value-img-frame img.revealed{opacity:1;transform:scale(1)}
+
+/* ═══ CLOSING ═══ */
+#closing{height:100vh;display:flex;flex-direction:column;justify-content:space-between}
+#closing-canvas-wrap{position:absolute;inset:0;z-index:0}
+.closing-bar{width:100%;padding:3rem 4rem 0;display:flex;justify-content:space-between;align-items:center;z-index:2}
+.closing-chapter{font-size:.75rem;letter-spacing:.2em;color:var(--text-muted)}
+.closing-line{width:100px;height:1px;background:var(--border)}
+.closing-center{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 10%;z-index:2}
+.closing-title{font-family:var(--serif);font-size:clamp(2rem,5vw,4rem);font-weight:600;letter-spacing:-.02em;color:var(--text);margin-bottom:2rem;max-width:800px;opacity:0;transform:translateY(30px) scale(.95);will-change:opacity,transform}
+.closing-btn{padding:1.2rem 3.5rem;font-size:.9rem;letter-spacing:.2em;text-transform:uppercase;background:var(--accent);color:var(--bg);border:none;cursor:pointer;font-weight:600;opacity:0;transform:translateY(20px);will-change:opacity,transform,box-shadow}
+.closing-footer{width:100%;padding:0 4rem 3rem;display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--text-muted);letter-spacing:.05em;z-index:2}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1024px){
+.offerings-grid{grid-template-columns:repeat(2,1fr)}
+.value-grid{grid-template-columns:1fr;gap:3rem}
+.value-img-frame{height:350px}
+.collage-f1,.collage-f2,.collage-f3,.collage-f4{width:160px;height:120px}
+}
+@media(max-width:768px){
+.hero-nav-links{display:none}
+.offerings-grid{grid-template-columns:1fr}
+#collage,#offerings,#value-pause{padding-left:1.5rem;padding-right:1.5rem}
+.collage-f1,.collage-f2,.collage-f3,.collage-f4{display:none}
+.closing-bar,.closing-footer{padding-left:1.5rem;padding-right:1.5rem}
+}
+</style>
 </head>
 <body>
-<div id="loader"><div class="spinner"></div><p>Loading Experience</p></div>
-<div id="root"></div>
 
-<!-- React 18 UMD (global React, ReactDOM) -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<!-- ═══ LOADER ═══ -->
+<div id="loader"><div class="spin"></div><p>Loading Experience</p></div>
 
-<!-- Three.js -->
+<!-- ═══ CHAPTER 1: HERO ═══ -->
+<section id="hero">
+<div id="hero-canvas-wrap"><canvas id="hero-canvas"></canvas></div>
+<nav class="hero-nav">
+<img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Flogo-v3.png&w=3840&q=75" alt="Zens Renovations">
+<ul class="hero-nav-links">
+<li><a href="#offerings">Services</a></li>
+<li><a href="#value-pause">Process</a></li>
+<li><a href="#closing">Contact</a></li>
+</ul>
+<a href="#closing" class="hero-nav-cta">Get Quote</a>
+</nav>
+<div class="hero-inner">
+<p class="hero-eyebrow">Decks · Fences · Roofing</p>
+<h1 class="hero-title">Built to Last, Crafted to Impress</h1>
+<p class="hero-sub">Zens Renovations specializes in custom decks, privacy fences, and roofing across Hamilton, Niagara, and surrounding areas. Quality outdoor builds and interior renovations, done right.</p>
+<button class="hero-cta" onclick="document.getElementById('closing').scrollIntoView({behavior:'smooth'})">Start Your Project</button>
+</div>
+<div class="hero-scroll"><span>Scroll</span><div class="hero-scroll-line"></div></div>
+</section>
+
+<!-- ═══ CHAPTER 2: COLLAGE ═══ -->
+<section id="collage">
+<div class="collage-inner">
+<span class="collage-chapter">02 / Origin DNA</span>
+<h2 class="collage-statement">Transforming Homes with <em>Precision &amp; Care</em></h2>
+<div class="collage-float collage-f1"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-4.png&w=3840&q=75" alt="Craftsmanship"></div>
+<div class="collage-float collage-f2"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-5.png&w=3840&q=75" alt="Interior"></div>
+<div class="collage-float collage-f3"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-1.png&w=3840&q=75" alt="Outdoor"></div>
+<div class="collage-float collage-f4"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-2.png&w=3840&q=75" alt="Deck"></div>
+</div>
+</section>
+
+<!-- ═══ CHAPTER 3: OFFERINGS ═══ -->
+<section id="offerings">
+<div class="offerings-header">
+<span class="offerings-chapter">03 / Capabilities Matrix</span>
+<h2 class="offerings-title">What We Build</h2>
+<div class="offerings-divider"></div>
+</div>
+<div class="offerings-grid">
+<div class="offering-card"><div class="offering-card-cover"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-1.png&w=3840&q=75" alt="Decks"></div><h3 class="offering-card-title">Decks &amp; Fences</h3><p class="offering-card-body">Extend your living space outdoors with custom-built decks and privacy fences. Premium materials, durable, stylish structures that enhance curb appeal.</p></div>
+<div class="offering-card"><div class="offering-card-cover"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-2.png&w=3840&q=75" alt="Roofing"></div><h3 class="offering-card-title">Roofing Services</h3><p class="offering-card-body">Protect your home with professional roofing services. From repairs to full replacements, we deliver weather-resistant solutions using top-tier materials.</p></div>
+<div class="offering-card"><div class="offering-card-cover"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-4.png&w=3840&q=75" alt="Contracting"></div><h3 class="offering-card-title">General Contracting</h3><p class="offering-card-body">We handle every aspect of your construction project with precision. From permits and planning to the final coat of paint — seamless and stress-free.</p></div>
+<div class="offering-card"><div class="offering-card-cover"><img src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-5.png&w=3840&q=75" alt="Interior"></div><h3 class="offering-card-title">Interior Renovations</h3><p class="offering-card-body">Transform your living spaces into modern masterpieces. Custom kitchens, spa-like bathrooms, and finished basements that maximize comfort and property value.</p></div>
+</div>
+</section>
+
+<!-- ═══ CHAPTER 4: VALUE PAUSE ═══ -->
+<section id="value-pause">
+<div class="value-grid">
+<div class="value-left">
+<span class="value-chapter">04 / Value Paradigm</span>
+<h2 class="value-headline">A streamlined, transparent process that makes your renovation journey smooth and stress-free.</h2>
+<p class="value-body">We start with a conversation about your vision, needs, and budget. Together we plan your project in detail, selecting materials, layouts, and finishes that bring your vision to life. You receive a transparent, itemized quote with no hidden surprises.</p>
+</div>
+<div class="value-img-frame"><img id="value-img" src="https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-4.png&w=3840&q=75" alt="Craftsmanship"></div>
+</div>
+</section>
+
+<!-- ═══ CHAPTER 5: CLOSING ═══ -->
+<section id="closing">
+<div id="closing-canvas-wrap"><canvas id="closing-canvas"></canvas></div>
+<div class="closing-bar"><span class="closing-chapter">05 / Terminal Conversion</span><div class="closing-line"></div></div>
+<div class="closing-center">
+<h2 class="closing-title">Ready to Transform Your Home?</h2>
+<button class="closing-btn" onclick="window.location.href='tel:4374105329'">Start Your Project</button>
+</div>
+<div class="closing-footer"><span>&copy; 2025 Zens Renovations. Hamilton &amp; Niagara.</span><span>(437) 410-5329</span></div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS — Three.js + GSAP + ScrollTrigger
+     No build step. No npm. No frameworks. Just raw animation.
+     ═══════════════════════════════════════════════════════════════ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<!-- GSAP + ScrollTrigger -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+'use strict';
+gsap.registerPlugin(ScrollTrigger);
 
-<!-- App bootstrap — plain JS, no JSX, no Babel needed -->
-<script src="./app.js"></script>
+/* ═══════════════════════════════════════
+   HERO — Three.js Particle Sphere + Wireframes
+   ═══════════════════════════════════════ */
+var heroCanvas = document.getElementById('hero-canvas');
+var hScene = new THREE.Scene();
+hScene.background = new THREE.Color(0x09090b);
+var hCam = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, .1, 1000);
+hCam.position.z = 1;
+var hRen = new THREE.WebGLRenderer({canvas:heroCanvas,antialias:true,alpha:true});
+hRen.setSize(innerWidth, innerHeight);
+hRen.setPixelRatio(Math.min(devicePixelRatio,2));
+
+// 2000 particles inSphere
+var pCount = 2000, pArr = new Float32Array(pCount*3);
+for(var i=0;i<pCount;i++){
+  var r=Math.cbrt(Math.random())*1.5, th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1);
+  pArr[i*3]=r*Math.sin(ph)*Math.cos(th); pArr[i*3+1]=r*Math.sin(ph)*Math.sin(th); pArr[i*3+2]=r*Math.cos(ph);
+}
+var pGeo=new THREE.BufferGeometry(); pGeo.setAttribute('position',new THREE.BufferAttribute(pArr,3));
+var pMat=new THREE.PointsMaterial({color:0xa1a1aa,size:.004,transparent:true,opacity:.6,sizeAttenuation:true,depthWrite:false});
+var particles=new THREE.Points(pGeo,pMat); hScene.add(particles);
+
+// Wireframe cubes
+var wMat=new THREE.MeshBasicMaterial({color:0xc8a97e,wireframe:true,transparent:true,opacity:.06});
+var w1=new THREE.Mesh(new THREE.BoxGeometry(5,5,5),wMat); w1.position.set(16,-7,-12); hScene.add(w1);
+var w2=new THREE.Mesh(new THREE.BoxGeometry(3.5,3.5,3.5),wMat.clone()); w2.material.opacity=.04; w2.position.set(-20,9,-16); hScene.add(w2);
+
+// Ambient orb
+var orb=new THREE.Mesh(new THREE.SphereGeometry(12,32,32),new THREE.MeshBasicMaterial({color:0xc8a97e,transparent:true,opacity:.015}));
+orb.position.set(0,0,-25); hScene.add(orb);
+
+var hScrollY=0;
+window.addEventListener('scroll',function(){hScrollY=window.scrollY},{passive:true});
+
+function animateHero(){
+  requestAnimationFrame(animateHero);
+  particles.rotation.y+=.0004;
+  particles.rotation.x=Math.sin(Date.now()*.0002)*.1;
+  w1.rotation.x+=.001; w1.rotation.y+=.002;
+  w2.rotation.x-=.0008; w2.rotation.y-=.0015;
+  particles.position.y+=(-(hScrollY*.0005)-particles.position.y)*.05;
+  hRen.render(hScene,hCam);
+}
+animateHero();
+
+// GSAP scroll parallax on hero
+gsap.to(particles.rotation,{z:.3,scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:1}});
+gsap.to(w1.position,{y:-16,scrollTrigger:{trigger:'#hero',start:'top top',end:'bottom top',scrub:1}});
+
+/* ═══════════════════════════════════════
+   CLOSING — Gold Particle Field
+   ═══════════════════════════════════════ */
+var cCanvas = document.getElementById('closing-canvas');
+var cScene = new THREE.Scene();
+var cCam = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 1000);
+cCam.position.z = 30;
+var cRen = new THREE.WebGLRenderer({canvas:cCanvas,antialias:true,alpha:true});
+cRen.setSize(innerWidth, innerHeight);
+cRen.setPixelRatio(Math.min(devicePixelRatio,2));
+
+var cpCount=350, cpArr=new Float32Array(cpCount*3);
+for(var i=0;i<cpCount;i++){
+  cpArr[i*3]=(Math.random()-.5)*60; cpArr[i*3+1]=(Math.random()-.5)*60; cpArr[i*3+2]=(Math.random()-.5)*30-10;
+}
+var cpGeo=new THREE.BufferGeometry(); cpGeo.setAttribute('position',new THREE.BufferAttribute(cpArr,3));
+var cpMat=new THREE.PointsMaterial({color:0xc8a97e,size:.05,transparent:true,opacity:.25,sizeAttenuation:true});
+var cParticles=new THREE.Points(cpGeo,cpMat); cScene.add(cParticles);
+
+function animateClosing(){
+  requestAnimationFrame(animateClosing);
+  cParticles.rotation.y+=.0002;
+  cParticles.rotation.x+=.0001;
+  cRen.render(cScene,cCam);
+}
+animateClosing();
+
+/* ═══════════════════════════════════════
+   RESIZE
+   ═══════════════════════════════════════ */
+window.addEventListener('resize',function(){
+  hCam.aspect=innerWidth/innerHeight; hCam.updateProjectionMatrix(); hRen.setSize(innerWidth,innerHeight);
+  cCam.aspect=innerWidth/innerHeight; cCam.updateProjectionMatrix(); cRen.setSize(innerWidth,innerHeight);
+});
+
+/* ═══════════════════════════════════════
+   GSAP — HERO ENTRANCE (Master Timeline)
+   Slow, choreographed, guides the eye
+   ═══════════════════════════════════════ */
+var heroTl = gsap.timeline({delay:.5});
+heroTl
+  .to('.hero-eyebrow',{opacity:1,y:0,duration:1.2,ease:'power3.out'})
+  .to('.hero-title',{opacity:1,y:0,duration:1.4,ease:'power3.out'},'-=0.7')
+  .to('.hero-sub',{opacity:1,y:0,duration:1.2,ease:'power3.out'},'-=0.9')
+  .to('.hero-cta',{opacity:1,y:0,scale:1,duration:1.2,ease:'power3.out'},'-=0.7')
+  .to('.hero-scroll',{opacity:1,duration:1,ease:'power3.out'},'-=0.5');
+
+// Hero CTA hover
+var heroCta = document.querySelector('.hero-cta');
+heroCta.addEventListener('mouseenter',function(){gsap.to(this,{scale:1.05,duration:.3,ease:'power2.out'})});
+heroCta.addEventListener('mouseleave',function(){gsap.to(this,{scale:1,duration:.3,ease:'power2.out'})});
+
+/* ═══════════════════════════════════════
+   GSAP — COLLAGE (Split-word reveal + parallax)
+   ═══════════════════════════════════════ */
+// Split the statement text into words
+var statementEl = document.querySelector('.collage-statement');
+var statementText = statementEl.textContent.trim();
+// Preserve the <em> tag
+var emMatch = statementEl.innerHTML.match(/<em>.*?<\/em>/);
+var plainText = statementEl.textContent.trim();
+var words = plainText.split(/\s+/);
+statementEl.innerHTML = words.map(function(w){
+  // Check if this word is inside the em
+  return '<span class="word">'+w+'</span>';
+}).join(' ');
+// Re-wrap "Precision & Care" in em
+var wordEls = statementEl.querySelectorAll('.word');
+var inEm = false;
+for(var i=0;i<wordEls.length;i++){
+  if(wordEls[i].textContent==='Precision') inEm=true;
+  if(inEm) wordEls[i].style.fontStyle='italic';
+  if(wordEls[i].textContent==='Care') inEm=false;
+}
+
+// Chapter label
+gsap.to('.collage-chapter',{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:'#collage',start:'top 75%'}});
+
+// Word-by-word reveal
+gsap.to('.collage-statement .word',{
+  opacity:1,y:0,duration:.6,stagger:.08,ease:'power3.out',
+  scrollTrigger:{trigger:'#collage',start:'top 70%',toggleActions:'play none none reverse'}
+});
+
+// Floating images entrance + parallax
+var floats = document.querySelectorAll('.collage-float');
+floats.forEach(function(el,i){
+  gsap.to(el,{opacity:1,scale:1,duration:1.5,ease:'power3.out',
+    scrollTrigger:{trigger:'#collage',start:'top 60%',toggleActions:'play none none reverse'},
+    onStart:function(){el.classList.add('revealed')}
+  });
+  gsap.to(el,{y:-(40+i*15),scrollTrigger:{trigger:'#collage',start:'top bottom',end:'bottom top',scrub:1+i*.3}});
+});
+
+/* ═══════════════════════════════════════
+   GSAP — OFFERINGS (Staggered card reveals)
+   ═══════════════════════════════════════ */
+gsap.to('.offerings-chapter',{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:'#offerings',start:'top 80%'}});
+gsap.to('.offerings-title',{opacity:1,y:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:'#offerings',start:'top 75%'}});
+gsap.to('.offering-card',{opacity:1,y:0,duration:1,stagger:.15,ease:'power3.out',scrollTrigger:{trigger:'.offerings-grid',start:'top 75%'}});
+
+/* ═══════════════════════════════════════
+   GSAP — VALUE PAUSE (Split-char reveal)
+   ═══════════════════════════════════════ */
+gsap.to('.value-chapter',{opacity:1,y:0,duration:.8,ease:'power3.out',scrollTrigger:{trigger:'#value-pause',start:'top 75%'}});
+
+// Split headline into characters
+var headlineEl = document.querySelector('.value-headline');
+var hText = headlineEl.textContent.trim();
+headlineEl.innerHTML = '';
+for(var i=0;i<hText.length;i++){
+  var ch = hText[i];
+  var span = document.createElement('span');
+  span.className = 'char';
+  span.style.opacity = '0';
+  span.style.display = 'inline-block';
+  span.style.whiteSpace = 'pre';
+  span.textContent = ch === ' ' ? '\u00a0' : ch;
+  headlineEl.appendChild(span);
+}
+
+gsap.to('.value-headline .char',{opacity:1,duration:.3,stagger:.02,ease:'power3.out',scrollTrigger:{trigger:'#value-pause',start:'top 70%'}});
+gsap.to('.value-body',{opacity:1,y:0,duration:1,ease:'power3.out',scrollTrigger:{trigger:'#value-pause',start:'top 65%'}});
+
+// Image reveal
+ScrollTrigger.create({trigger:'#value-pause',start:'top 60%',onEnter:function(){document.getElementById('value-img').classList.add('revealed')},toggleActions:'play none none reverse'});
+
+/* ═══════════════════════════════════════
+   GSAP — CLOSING (Scale + fade CTA)
+   ═══════════════════════════════════════ */
+gsap.to('.closing-title',{opacity:1,y:0,scale:1,duration:1.4,ease:'power3.out',scrollTrigger:{trigger:'#closing',start:'top 70%'}});
+gsap.to('.closing-btn',{opacity:1,y:0,duration:1.2,ease:'power3.out',scrollTrigger:{trigger:'#closing',start:'top 60%'}});
+
+var closingBtn = document.querySelector('.closing-btn');
+closingBtn.addEventListener('mouseenter',function(){gsap.to(this,{scale:1.05,boxShadow:'0 0 40px rgba(200,169,126,.3)',duration:.3,ease:'power2.out'})});
+closingBtn.addEventListener('mouseleave',function(){gsap.to(this,{scale:1,boxShadow:'none',duration:.3,ease:'power2.out'})});
+
+/* ═══════════════════════════════════════
+   HIDE LOADER
+   ═══════════════════════════════════════ */
+window.addEventListener('load',function(){
+  setTimeout(function(){document.getElementById('loader').classList.add('done')},800);
+});
+
+})();
+</script>
 </body>
 </html>

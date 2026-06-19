@@ -1,19 +1,31 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import glsl from 'vite-plugin-glsl';
+import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [react(), glsl()],
+  plugins: [react()],
   assetsInclude: ['**/*.glb', '**/*.gltf', '**/*.obj', '**/*.mtl'],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './'),
+      '@components': resolve(__dirname, './components'),
+    },
+  },
   build: {
     target: 'esnext',
     minify: 'terser',
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
-          'gsap-vendor': ['gsap'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/three') || id.includes('node_modules/@react-three')) {
+            return 'three-vendor';
+          }
+          if (id.includes('node_modules/gsap')) {
+            return 'gsap-vendor';
+          }
         },
       },
     },
