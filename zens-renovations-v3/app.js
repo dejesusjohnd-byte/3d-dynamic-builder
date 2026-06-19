@@ -150,54 +150,138 @@ function initClosingScene() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   GSAP — Scroll-triggered staggered reveals
+   GSAP — Cinematic Animation System
+   Slow, choreographed, hierarchy-driven reveals
    ═══════════════════════════════════════════════════════════════ */
 function initScrollAnimations() {
-  var heroTl = gsap.timeline({ delay: 0.6 });
+
+  /* ─── HERO ENTRANCE ───
+     Master timeline: eyebrow → headline → sub → CTA
+     Each element waits for the previous to mostly finish
+     Slow durations: 1.4s–2.0s per element */
+  var heroTl = gsap.timeline({ delay: 0.4 });
+
   heroTl
-    .to('.hero-eyebrow', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' })
-    .to('.hero-title-v3', { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out' }, '-=0.6')
-    .to('.hero-sub-v3', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.8')
-    .to('.hero-cta-v3', { opacity: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.6');
+    .fromTo('.hero-eyebrow',
+      { opacity: 0, y: 30, filter: 'blur(8px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.6, ease: 'power3.out' }
+    )
+    .fromTo('.hero-title-v3',
+      { opacity: 0, y: 60, filter: 'blur(12px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: 2.0, ease: 'power3.out' },
+      '-=0.8'   /* starts 0.8s before eyebrow finishes */
+    )
+    .fromTo('.hero-sub-v3',
+      { opacity: 0, y: 40, filter: 'blur(8px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.8, ease: 'power3.out' },
+      '-=1.0'   /* starts 1s before title finishes */
+    )
+    .fromTo('.hero-cta-v3',
+      { opacity: 0, y: 35, scale: 0.9, filter: 'blur(6px)' },
+      { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.6, ease: 'power3.out' },
+      '-=0.8'
+    );
 
-  gsap.to('.collage-chapter-v3', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
-    scrollTrigger: { trigger: '#collage', start: 'top 75%' } });
-  gsap.to('.collage-statement-v3', { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
-    scrollTrigger: { trigger: '#collage', start: 'top 70%', toggleActions: 'play none none reverse' } });
-  gsap.to('.collage-float-img', { opacity: 1, scale: 1, duration: 1.5, stagger: 0.15, ease: 'power3.out',
-    scrollTrigger: { trigger: '#collage', start: 'top 60%', toggleActions: 'play none none reverse' } });
+  /* ─── COLLAGE ───
+     Chapter label → statement → floating images
+     Each with blur+opacity, slow stagger on images */
+  gsap.fromTo('.collage-chapter-v3',
+    { opacity: 0, y: 25, filter: 'blur(6px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.4, ease: 'power3.out',
+      scrollTrigger: { trigger: '#collage', start: 'top 72%' } }
+  );
 
-  var floatImgs = document.querySelectorAll('.collage-float-img');
-  floatImgs.forEach(function(el, i) {
+  gsap.fromTo('.collage-statement-v3',
+    { opacity: 0, y: 50, filter: 'blur(10px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.8, ease: 'power3.out',
+      scrollTrigger: { trigger: '#collage', start: 'top 65%', toggleActions: 'play none none reverse' } }
+  );
+
+  // Floating images: slow entrance + scroll parallax
+  var floats = document.querySelectorAll('.collage-float-img');
+  floats.forEach(function(el, i) {
+    // Entrance — slow scale+opacity with blur
+    gsap.fromTo(el,
+      { opacity: 0, scale: 0.8, filter: 'blur(12px)' },
+      { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 2.2, ease: 'power3.out',
+        scrollTrigger: { trigger: '#collage', start: 'top 55%', toggleActions: 'play none none reverse' },
+        delay: i * 0.25  /* each image waits 0.25s after the previous */
+      }
+    );
+    // Parallax — different scrub speed per image
     gsap.to(el, {
-      y: -(40 + i * 15),
-      scrollTrigger: { trigger: '#collage', start: 'top bottom', end: 'bottom top', scrub: 1 + i * 0.3 }
+      y: -(60 + i * 25),
+      scrollTrigger: { trigger: '#collage', start: 'top bottom', end: 'bottom top', scrub: 1.5 + i * 0.4 }
     });
   });
 
-  gsap.to('.offerings-chapter-v3', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
-    scrollTrigger: { trigger: '#offerings', start: 'top 80%' } });
-  gsap.to('.offerings-title-v3', { opacity: 1, y: 0, duration: 1, ease: 'power3.out',
-    scrollTrigger: { trigger: '#offerings', start: 'top 75%' } });
-  gsap.to('.offering-card-v3', { opacity: 1, y: 0, duration: 1, stagger: 0.12, ease: 'power3.out',
-    scrollTrigger: { trigger: '.offerings-grid-v3', start: 'top 75%' } });
+  /* ─── OFFERINGS ───
+     Label → title → cards in sequence
+     Cards stagger with 0.3s gap, slow durations */
+  gsap.fromTo('.offerings-chapter-v3',
+    { opacity: 0, y: 25, filter: 'blur(6px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.4, ease: 'power3.out',
+      scrollTrigger: { trigger: '#offerings', start: 'top 78%' } }
+  );
 
-  gsap.to('.value-chapter-v3', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
-    scrollTrigger: { trigger: '#value-pause', start: 'top 75%' } });
-  gsap.to('.value-headline-v3', { opacity: 1, y: 0, duration: 1, ease: 'power3.out',
-    scrollTrigger: { trigger: '#value-pause', start: 'top 70%' } });
-  gsap.to('.value-body-v3', { opacity: 1, y: 0, duration: 1, ease: 'power3.out',
-    scrollTrigger: { trigger: '#value-pause', start: 'top 65%' } });
+  gsap.fromTo('.offerings-title-v3',
+    { opacity: 0, y: 40, filter: 'blur(8px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.6, ease: 'power3.out',
+      scrollTrigger: { trigger: '#offerings', start: 'top 72%' } }
+  );
+
+  // Cards: sequential stagger, each slides up with blur fade
+  gsap.fromTo('.offering-card-v3',
+    { opacity: 0, y: 55, filter: 'blur(10px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.6, stagger: 0.3, ease: 'power3.out',
+      scrollTrigger: { trigger: '.offerings-grid-v3', start: 'top 70%' } }
+  );
+
+  /* ─── VALUE PAUSE ───
+     Label → headline → body text → image reveal
+     Asymmetric split with slow image scale */
+  gsap.fromTo('.value-chapter-v3',
+    { opacity: 0, y: 25, filter: 'blur(6px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.4, ease: 'power3.out',
+      scrollTrigger: { trigger: '#value-pause', start: 'top 75%' } }
+  );
+
+  gsap.fromTo('.value-headline-v3',
+    { opacity: 0, y: 50, filter: 'blur(10px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.8, ease: 'power3.out',
+      scrollTrigger: { trigger: '#value-pause', start: 'top 68%' } }
+  );
+
+  gsap.fromTo('.value-body-v3',
+    { opacity: 0, y: 35, filter: 'blur(6px)' },
+    { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1.6, ease: 'power3.out',
+      scrollTrigger: { trigger: '#value-pause', start: 'top 62%' } }
+  );
+
+  // Right column image: slow scale reveal
   ScrollTrigger.create({
-    trigger: '#value-pause', start: 'top 60%',
-    onEnter: function() { var img = document.getElementById('value-img'); if (img) img.classList.add('reveal'); },
-    toggleActions: 'play none none reverse'
+    trigger: '#value-pause', start: 'top 58%', toggleActions: 'play none none reverse',
+    onEnter: function() {
+      var img = document.getElementById('value-img');
+      if (img) {
+        gsap.to(img, { opacity: 1, scale: 1, duration: 2.2, ease: 'power3.out' });
+      }
+    }
   });
 
-  gsap.to('.closing-title-v3', { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out',
-    scrollTrigger: { trigger: '#closing', start: 'top 70%' } });
-  gsap.to('.closing-cta-v3', { opacity: 1, y: 0, duration: 1, ease: 'power3.out',
-    scrollTrigger: { trigger: '#closing', start: 'top 60%' } });
+  /* ─── CLOSING ───
+     Headline → CTA button, slow scale+fade */
+  gsap.fromTo('.closing-title-v3',
+    { opacity: 0, y: 50, scale: 0.92, filter: 'blur(10px)' },
+    { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 2.0, ease: 'power3.out',
+      scrollTrigger: { trigger: '#closing', start: 'top 68%' } }
+  );
+
+  gsap.fromTo('.closing-cta-v3',
+    { opacity: 0, y: 35, scale: 0.9, filter: 'blur(6px)' },
+    { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', duration: 1.6, ease: 'power3.out',
+      scrollTrigger: { trigger: '#closing', start: 'top 58%' } }
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════
