@@ -1,110 +1,159 @@
 {
   "GLOBAL_DESIGN_SYSTEM": {
-    "pipeline_objective": "Ingest flat, parsed static website data and systematically up-level it into a spatial, 3D dynamic experience featuring premium cinematic motion and layout restraint.",
-    
+    "pipeline_objective": "Ingest flat, parsed static website data and systematically up-level it into a spatial, 3D dynamic experience featuring premium Three.js WebGL scenes, GSAP scroll-driven animations, and optional Sketchfab model embeds.",
+
     "3D_spatial_rules": {
-      "camera_rig": "Enforce a controlled WebGL/Three.js perspective camera matrix. Prevent the user from completely flipping the scene; restrict viewing angles to subtle parallax shifts.",
-      "depth_layers_z_axis": "Assign explicit Z-index/depth layers. Background environments live at Z: -50, floating 3D ambient objects live at Z: -10 to -5, typography planes sit strictly at Z: 0 for crisp legibility, and cursor micro-interactions trigger a +2 forward pull.",
-      "asset_optimization": "All 3D models or particle meshes must use optimized glTF/glb formats with compression to ensure instantaneous rendering, avoiding low-end performance stutter."
+      "camera_rig": "Each chapter with a 3D canvas gets its own <Canvas> instance from @react-three/fiber. Camera FOV: 45-60. Position z: 3-5 for model close-ups, z: 1 for full-scene particle fields. Enable subtle auto-rotation (0.05-0.2 rad/s) on hero models. Restrict OrbitControls to Y-axis rotation only (no flip).",
+      "depth_layers_z_axis": "Background particle fields live at z: -5 to -10. 3D models live at z: 0 to 2. Typography planes sit strictly at CSS z-index: 10+ for crisp legibility. Cursor micro-interactions trigger +0.5 forward pull on hoverable 3D objects.",
+      "asset_loading_protocol": {
+        "gltf_glb": "Load via useGLTF from @react-three/drei. Files placed in /public/assets/. Use suspense boundary. Fallback: ambient particle field.",
+        "obj": "Load via useLoader(OBJLoader, path) from @react-three/fiber. Same fallback.",
+        "sketchfab": "Embed via <iframe> using Sketchfab's embed API: https://sketchfab.com/models/{uid}/embed. Responsive container with aspect-ratio control.",
+        "particle_field_default": "Minimum 1500 particles, inSphere distribution (radius 1.5), color #a1a1aa, size 0.003-0.005. Scroll-linked parallax via GSAP ScrollTrigger.",
+        "performance_ceiling": "All GLTF/GLB assets must be under 5MB. Apply Draco compression. Lazy-load canvases with React.Suspense."
+      }
+    },
+
+    "gsap_motion_system": {
+      "timeline_architecture": {
+        "hero_entrance": "Master gsap.timeline() with choreographed delays: eyebrow (0s), title (+0.3s), subtitle (+0.5s), CTA button (+0.7s). Each element fade-up from y: 30-50px, opacity 0→1, ease: 'power3.out', duration: 0.8-1.2s.",
+        "section_reveals": "Independent ScrollTrigger per section. Trigger: section top at 75% viewport. Stagger: 0.12-0.2s between child elements. scrub: 0.5-1 for scroll-linked progress.",
+        "micro_interactions": "All buttons/GSAP hover: scale(1.03-1.05), duration 0.3s, ease: power2.out. Text underlines: scaleX(0→1) on hover. Card hover: y: translateY(-4px), box-shadow elevation."
+      },
+      "scroll_trigger_rules": {
+        "base_config": { "trigger": "section element", "start": "top 75%", "end": "bottom top", "scrub": 0.5, "toggleActions": "play none none reverse" },
+        "parallax_elements": "Variable scrub speeds (0.5-2.0) for floating images to create Z-depth illusion. Slower elements appear further away.",
+        "cleanup_required": "All ScrollTriggers killed on unmount. Use useEffect cleanup return function."
+      },
+      "split_text_reveals": "Headline text splits into individual words or characters for sequential reveal. gsap.from() with stagger: 0.05-0.08 per character. Used in TwoColumnValuePause and ClosingCallToAction."
     },
 
     "curation_and_rejection_filters": {
       "rejection_triggers": [
-        "No scattered elements or mismatched fonts/spacing (screams cheap, generic templates).",
-        "No auto-playing sliders or random, unconstrained 3D visual gimmicks that serve no narrative purpose.",
-        "Avoid over-indexing on messy source data; filter aggressively for layouts with a $5k–$10k premium valuation structure."
+        "No static image-only sections. Every section must have motion (GSAP, Three.js, or both).",
+        "No CSS-only hover states. All interactive elements require GSAP-powered micro-interactions.",
+        "No flat particle backgrounds on every canvas. Hero gets 3D model or scene; other sections get contextual 3D elements.",
+        "No auto-playing carousels or sliders. All transitions are scroll-linked or user-triggered."
       ],
       "premium_benchmarks": {
-        "margins_and_alignment": "Generous margins, perfectly clean alignment, and sharp visual contrast.",
-        "typography": "Highly restricted, archetype-specific typography (e.g., sophisticated Serifs for luxury/legal, precise Sans-Serifs for modern tech)."
+        "motion": "Every scroll produces visible, meaningful animation. No dead scroll zones.",
+        "3D": "At least one WebGL canvas with real 3D content per project (model, scene, or interactive element).",
+        "typography": "Split-type text reveals on key headlines. Serif for headlines, sans-serif for body.",
+        "spacing": "8rem-12rem vertical padding between chapters. 2rem-3rem inner component padding."
       }
     },
 
     "hierarchy_and_legibility_rules": {
-      "sequential_gaze": "Force the eye to move in a strict, uncrowded sequence: Huge Bold Element (Primary) -> Medium Text (Secondary) -> Tiny Action/Date (Tertiary).",
-      "digital_silence": "Enforce heavy, deliberate white space/negative space between sections to separate colored panels and act as a visual pause to reduce cognitive load.",
-      "text_overlay_legibility": "When a 3D environment or background asset looks visually busy, dynamically inject a translucent overlay to guarantee typography remains flawlessly readable."
+      "sequential_gaze": "Force the eye to move in strict sequence: Huge Bold Element (Primary) -> Medium Text (Secondary) -> Tiny Action/Date (Tertiary).",
+      "digital_silence": "Enforce heavy white space between sections. 3D canvases never bleed into adjacent content areas.",
+      "text_overlay_legibility": "When 3D canvas is behind text, apply translucent backdrop (rgba(9,9,11,0.4-0.6)) to guarantee readability.",
+      "canvas_isolation": "Each Canvas gets its own DOM container with position: absolute, inset: 0, zIndex: 0. Typography overlays at zIndex: 10+."
     },
 
-    "motion_and_interaction_rules": {
-      "intentional_motion": "Motion is never a random decoration. It must guide the eye, build atmosphere, and support the brand's core story.",
-      "scroll_linked_pacing": "Sync 3D mesh rotations, scales, and camera translations directly to scroll progress using scroll-linked libraries (e.g., GSAP ScrollTrigger), moving fluidly with the user.",
-      "staggered_reveal_delay": "Enforce micro-delays on sequential lines of text. Elements must fade in or glide up from black-to-gray transitions rather than appearing all at once, controlling the reading pace.",
-      "restrained_hovers": "Hover interactions over 3D coordinates or UI elements must remain minimal, subtle, and restrained to protect the luxury aesthetic.",
-      "micro_acknowledgments": "Every hover/click must trigger a subtle micro-interaction (button color shift, minor jiggle, text underline slide) so the site feels responsive and alive."
+    "color_palette": {
+      "background": "#09090b",
+      "surface": "#141416",
+      "surface_variant": "#18181b",
+      "border": "#27272a",
+      "text_primary": "#f4f4f5",
+      "text_secondary": "#a1a1aa",
+      "text_muted": "#71717a",
+      "accent_gold": "#c8a97e",
+      "particle_color": "#a1a1aa",
+      "particle_accent": "#c8a97e"
     }
   },
 
   "NARRATIVE_COMPONENTS": {
     "1_HeroSection": {
-      "story_role": "The Mood Setter. Focuses visitor attention completely, sets emotional expectations, and states the core value proposition cleanly without clutter.",
+      "story_role": "The Cinematic Mood Setter. Full-viewport 3D scene establishes premium atmosphere and brand presence.",
       "structural_layout": [
-        "A full-screen interactive 3D canvas background (e.g., particle field or ambient mesh) moving slower than the typography on scroll (parallax effect).",
-        "A minimal, small logo paired with a hyper-clean, restricted top navigation bar.",
-        "A massive, bold headline centered over the canvas with a short supporting tagline line.",
-        "A singular, isolated primary CTA button to keep the immediate focus entirely clear.",
-        "An anchored, floating scroll-linked 3D object that tracks scroll progress downward to seamlessly connect to the next section."
+        "Full-screen Three.js <Canvas> background (GLTF model OR ambient particle field as fallback).",
+        "Minimal top navigation: logo left, nav links center, CTA button right. mix-blend-mode: difference.",
+        "Massive serif headline centered over canvas, split-text GSAP reveal.",
+        "Short supporting tagline below, staggered GSAP fade-in.",
+        "Single primary CTA button with GSAP scale hover.",
+        "Scroll indicator at bottom: animated line with GSAP pulse."
       ],
+      "gsap_sequence": "Master timeline: eyebrow (y:20→0, opacity 0→1, 1s) → title split-text (stagger 0.06 per char, 1.2s) → subtitle (y:20→0, 1s, delay 0.5) → CTA button (y:20→0, 1s, delay 0.7) → scroll indicator fade (delay 1.0)",
+      "three_js": "Canvas camera position [0,0,1], fov 50. If hero_3d_asset_url provided: load GLTF via useGLTF, center in scene, autoRotate speed 0.5. Fallback: 2000 particles inSphere radius 1.5, PointMaterial color #a1a1aa size 0.004 depthWrite false. Wireframe cube orbit.",
       "inputs_extracted_from_static_site": {
-        "logoAssetURL": "Path to the parsed brand mark.",
-        "heroHeadline": "The main, high-impact text line summarizing the core corporate value or goal.",
-        "heroSubheading": "The concise supporting statement setting the brand's tone.",
-        "ctaText": "Action text for the singular focus button (e.g., 'Explore Now')."
+        "brand_identity_logo": "Clean URL string for brand mark.",
+        "hook_headline": "Primary headline text (max 12 words).",
+        "hook_context": "Supporting subheading sentence.",
+        "primary_action_label": "CTA button text.",
+        "hero_3d_asset_url": "Optional. Path to GLTF/GLB file or Sketchfab model UID for hero 3D scene."
       }
     },
 
     "2_CollageIntroduction": {
-      "story_role": "The Humanizer. Transitions the user from broad hero appeal into a personal narrative, adding character and hinting at brand diversity.",
+      "story_role": "The Humanizer. Transitions from hero into personal narrative with floating parallax imagery.",
       "structural_layout": [
-        "A central, elegant text block consisting of exactly one powerful sentence explaining who the brand is and why they exist.",
-        "Surrounded by a small, tightly curated collage of contextual photos framing the text.",
-        "Images must slightly overlap the text layout to introduce an intentional human imperfection and sense of depth."
+        "Chapter marker label (e.g., '02 / Origin DNA') with GSAP fade-in.",
+        "Single powerful sentence centered, serif font, GSAP split-word reveal.",
+        "3-4 floating images at different Z-rotations and parallax speeds.",
+        "Images have grayscale filter that desaturates on scroll progress."
       ],
+      "gsap_sequence": "Chapter label (y:15→0, opacity 0→1, 0.8s) → statement split-word reveal (stagger 0.1 per word, scrollTrigger start top 70%) → floating images (scale 0.95→1, opacity 0→1, stagger 0.15) → parallax (y: variable per image, scrub 0.8-1.8)",
+      "three_js": "No dedicated canvas. Pure CSS/GSAP parallax on floating images.",
       "inputs_extracted_from_static_site": {
-        "introStatement": "A single, memorable sentence outlining corporate purpose and existence.",
-        "collageImages": "An array of 3 to 4 distinct image URLs representing the brand's personality."
+        "introStatement": "One powerful sentence for brand narrative.",
+        "collage_images": "Array of 3-4 image URLs."
       }
     },
 
     "3_StaticOfferingsGrid": {
-      "story_role": "The Offerings. Presents core services or products clearly at a single glance, relying on a clean static layout instead of distracting sliders.",
+      "story_role": "The Offerings. Clean symmetric grid with 3D hover depth effect.",
       "structural_layout": [
-        "A structured, uniform grid composed of 3 static cards (or replicated into a clean 4-card / multi-row block if content dictates).",
-        "Consistent panel sizing across all elements to entirely eliminate visual chaos.",
-        "Each card is hard-coded to contain an image, a clear title, and a highly concise description."
+        "Chapter marker + section title + divider line header.",
+        "Strict 4-card symmetric grid (or 3 if only 3 items). 2px gap borders.",
+        "Each card: cover image (grayscale, desaturate on hover), title, description.",
+        "GSAP staggered card entrance: y:30→0, opacity 0→1, stagger 0.12.",
+        "Card hover: translateY(-6px), box-shadow elevation, image filter transition."
       ],
+      "gsap_sequence": "Chapter label (y:15→0, 0.8s) → title (y:20→0, 1s) → cards stagger (y:30→0, opacity 0→1, stagger 0.12) → hover micro-interactions (scale, shadow, y lift)",
+      "three_js": "No dedicated canvas. CSS 3D perspective transforms on card hover for depth illusion.",
       "inputs_extracted_from_static_site": {
-        "gridItems": "An array of objects (minimum 3), each containing 'title', 'shortDescription', and 'imageURL'."
+        "offering_units": "Array of { item_title, item_summary, item_cover_url }. Max 4 items."
       }
     },
 
     "4_TwoColumnValuePause": {
-      "story_role": "The Trust Builder. Acts as a visual pause or 'digital breath' on the page, focusing entirely on philosophical connection rather than a sales conversion.",
+      "story_role": "The Trust Builder. Asymmetric split with GSAP text reveals and optional Sketchfab 3D.",
       "structural_layout": [
-        "A strict two-column asymmetrical split layout.",
-        "Left Column: A bold, memorable philosophical statement, followed by a short paragraph adding deep context.",
-        "Right Column: A singular, high-quality image that directly illustrates the philosophy.",
-        "Optional: A secondary, low-friction button ('Learn More' or 'Discover') that remains strictly non-mandatory."
+        "Strict two-column asymmetric grid: 1.2fr text / 1fr visual.",
+        "Left: chapter marker, bold serif headline (GSAP split-text), body paragraph.",
+        "Right: Sketchfab embed iframe OR high-res image with GSAP scale reveal.",
+        "6rem gap between columns."
       ],
+      "gsap_sequence": "Chapter label (y:15→0, 0.8s) → headline split-text reveal (stagger 0.06 per char) → body text (y:20→0, 1s, delay 0.4) → right visual (scale 1.1→1, opacity 0→1, 1.5s, delay 0.3)",
+      "three_js": "Optional Sketchfab iframe embed if sketchfab_embed_uid provided. Else static image with GSAP reveal.",
       "inputs_extracted_from_static_site": {
-        "philosophyHeadline": "A bold, memorable statement about the company's process or philosophy.",
-        "philosophyDeepDive": "A short, high-trust paragraph adding depth to the headline.",
-        "illustrativeImageAsset": "A realistic image URL matching the conceptual narrative."
+        "philosophy_anchor": "Bold quote or statement for headline.",
+        "philosophy_deep_dive": "Short paragraph expanding the philosophy.",
+        "singular_master_visual": "High-quality image URL for right column.",
+        "sketchfab_embed_uid": "Optional Sketchfab model UID for 3D embed."
       }
     },
 
     "5_ClosingCallToAction": {
-      "story_role": "The Closer. Leaves the visitor with an incredibly clean, uncluttered final choice to solidify their conversion journey.",
+      "story_role": "The Closer. Minimal terminal with particle atmosphere and GSAP CTA.",
       "structural_layout": [
-        "A full-width, immersive static photo background or ultra-smooth cinematic 3D video environment.",
-        "A completely centered, simple typography stack featuring a strong, highly inviting headline.",
-        "A single, clean supporting reassurance sentence positioned directly underneath.",
-        "One massive, singular, unmistakable conversion button."
+        "Chapter marker bar at top with thin divider line.",
+        "Full viewport height with Three.js gold particle field canvas.",
+        "Centered serif headline (GSAP scale + fade reveal).",
+        "Single large CTA button (GSAP pulse/breathing hover).",
+        "Minimal footer: copyright left, contact right."
       ],
+      "gsap_sequence": "Title (scale 0.95→1, y:30→0, opacity 0→1, 1.2s) → CTA button (y:20→0, opacity 0→1, 1s, delay 0.3) → button hover: GSAP scale pulse 1→1.05, box-shadow bloom",
+      "three_js": "Canvas z:0. 350 gold particles (#c8a97e), size 0.05, opacity 0.25. Gentle rotation. Scroll-linked subtle position shift.",
       "inputs_extracted_from_static_site": {
-        "closingHeadline": "A powerful final invitation (e.g., 'Let's Build Something Together').",
-        "closingSupportText": "A final reassurance sentence to anchor the value.",
-        "finalCtaLabel": "Clear, conversion-focused action text."
+        "closing_invitation": "Final invitation headline.",
+        "target_conversion_label": "CTA button text.",
+        "baseline_essentials": {
+          "corporate_copyright": "Copyright string.",
+          "direct_contact_strings": "Phone or email."
+        }
       }
     }
   }

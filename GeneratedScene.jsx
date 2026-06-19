@@ -7,16 +7,15 @@ import ClosingCallToAction from './components/ClosingCallToAction';
 
 // ═══════════════════════════════════════════════════════════════
 // BUCKET 1 — Identity & the Hook → HeroSection
-// Source: zensrenovation.com extraction_manifesto.json
 // ═══════════════════════════════════════════════════════════════
 const brand_identity_logo = 'https://zensrenovation.com/_next/image?url=%2Fimages%2Flogo-v3.png&w=3840&q=75';
 const hook_headline = 'Built to Last, Crafted to Impress';
 const hook_context = 'Zens Renovations specializes in custom decks, privacy fences, and roofing across Hamilton, Niagara, and surrounding areas. Quality outdoor builds and interior renovations, done right.';
 const primary_action_label = 'Start Your Project';
+const hero_3d_asset_url = ''; // Set to '/assets/model.glb' or Sketchfab UID to load a 3D model. Empty = particle fallback.
 
 // ═══════════════════════════════════════════════════════════════
 // BUCKET 2 — Corporate DNA & the Collage → CollageIntroduction
-// Source: zensrenovation.com extraction_manifesto.json
 // ═══════════════════════════════════════════════════════════════
 const introStatement = 'Transforming Homes with Precision & Care';
 const collageImages = [
@@ -28,12 +27,11 @@ const collageImages = [
 
 // ═══════════════════════════════════════════════════════════════
 // BUCKET 3 — The Symmetric Matrix → StaticOfferingsGrid
-// Source: zensrenovation.com extraction_manifesto.json
 // ═══════════════════════════════════════════════════════════════
 const offering_units = [
   {
     item_title: 'Decks & Fences',
-    item_summary: 'Extend your living space outdoors with custom-built decks and privacy fences. We use premium materials to create durable, stylish structures that enhance your home\'s curb appeal.',
+    item_summary: "Extend your living space outdoors with custom-built decks and privacy fences. We use premium materials to create durable, stylish structures that enhance your home's curb appeal.",
     item_cover_url: 'https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-1.png&w=3840&q=75',
   },
   {
@@ -55,15 +53,14 @@ const offering_units = [
 
 // ═══════════════════════════════════════════════════════════════
 // BUCKET 4 — The Deep Trust Philosophy → TwoColumnValuePause
-// Source: zensrenovation.com extraction_manifesto.json
 // ═══════════════════════════════════════════════════════════════
 const philosophy_anchor = 'A streamlined, transparent process that makes your renovation journey smooth and stress-free.';
 const philosophy_deep_dive = 'We start with a conversation about your vision, needs, and budget. Together we plan your project in detail, selecting materials, layouts, and finishes that bring your vision to life. You receive a transparent, itemized quote with no hidden surprises. Once approved, our expert team transforms your space with precision and care, followed by a complete final walkthrough.';
 const singular_master_visual = 'https://zensrenovation.com/_next/image?url=%2Fimages%2Fhero%2Fhero-4.png&w=3840&q=75';
+const sketchfab_embed_uid = ''; // Set to a Sketchfab model UID to embed 3D. Empty = static image.
 
 // ═══════════════════════════════════════════════════════════════
 // BUCKET 5 — The Final Gateway → ClosingCallToAction
-// Source: zensrenovation.com extraction_manifesto.json
 // ═══════════════════════════════════════════════════════════════
 const closing_invitation = 'Ready to Transform Your Home?';
 const target_conversion_label = 'Start Your Project';
@@ -73,8 +70,7 @@ const baseline_essentials = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// REACT COMPOSITION — GeneratedScene.jsx
-// 5 sequential chapters per manifesto.json narrative structure
+// REACT COMPOSITION — 5 sequential chapters
 // ═══════════════════════════════════════════════════════════════
 export default function GeneratedScene() {
   return (
@@ -84,6 +80,7 @@ export default function GeneratedScene() {
         hook_headline={hook_headline}
         hook_context={hook_context}
         primary_action_label={primary_action_label}
+        hero_3d_asset_url={hero_3d_asset_url}
       />
       <CollageIntroduction
         introStatement={introStatement}
@@ -96,6 +93,7 @@ export default function GeneratedScene() {
         philosophy_anchor={philosophy_anchor}
         philosophy_deep_dive={philosophy_deep_dive}
         singular_master_visual={singular_master_visual}
+        sketchfab_embed_uid={sketchfab_embed_uid}
       />
       <ClosingCallToAction
         closing_invitation={closing_invitation}

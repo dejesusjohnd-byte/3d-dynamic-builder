@@ -1,42 +1,45 @@
 {
   "CONTENT_DISTILLATION_MANIFESTO": {
-    "system_objective": "Ingest unstructured, raw flat-website data dumps and surgically isolate core brand messaging and media into 5 structurally locked container buckets, discarding all irrelevant visual noise and layout constraints.",
-    
+    "system_objective": "Ingest unstructured, raw flat-website data and surgically isolate core brand messaging, media, and optional 3D asset references into 5 structurally locked container buckets. Discard all irrelevant visual noise and layout constraints.",
+
     "ingestion_governance_rules": {
       "aggressive_exclusion": "If incoming scraped data does not cleanly fulfill the semantic parameters of the 5 defined buckets, it must be permanently discarded at the ingestion boundary.",
-      "structural_autonomy": "Do not extract inline CSS styles, font families, custom colors, layout coordinates, or button dimensions. Harvest only raw text strings and media URLs as pure semantic elements.",
-      "layout_flattening": "All dynamic client-side layouts (sliders, auto-playing carousels, tab-switches, interactive accordion blocks) must be unrolled and flattened into static data entries before curation filtering."
+      "structural_autonomy": "Do not extract inline CSS styles, font families, custom colors, layout coordinates, or button dimensions. Harvest only raw text strings, media URLs, and optional 3D asset references as pure semantic elements.",
+      "layout_flattening": "All dynamic client-side layouts (sliders, auto-playing carousels, tab-switches, interactive accordion blocks) must be unrolled and flattened into static data entries before curation filtering.",
+      "3d_asset_harvesting": "Scan for any embedded 3D content: Sketchfab iframes (extract model UID from src URL), GLTF/GLB file links, OBJ file links, or embedded model viewer scripts. These are OPTIONAL enrichment fields — if absent, the pipeline falls back to default particle fields."
     },
 
     "extraction_buckets": {
       "bucket_1_identity_and_the_hook": {
-        "target_component": "HeroSection (Cinematic Mood Setter)",
+        "target_component": "HeroSection (Cinematic 3D Mood Setter)",
         "dom_extraction_directives": [
           "Target root semantic layers of the initial homepage viewport.",
-          "Isolate primary heading nodes (h1, h2), adjacent introduction paragraph containers, and root header branding elements."
+          "Isolate primary heading nodes (h1, h2), adjacent introduction paragraph containers, and root header branding elements.",
+          "Scan for any Sketchfab embeds, 3D model viewers, or WebGL canvas elements in the hero area."
         ],
         "captured_parameters": {
           "brand_identity_logo": "Clean URL string mapping to a vector graphic or high-contrast wordmark asset.",
           "hook_headline": "The absolute primary promotional statement or core brand greeting text.",
           "hook_context": "The immediate supporting explanatory phrase or secondary sentence establishing operational context.",
-          "primary_action_label": "The localized text string of the primary conversion button node."
+          "primary_action_label": "The localized text string of the primary conversion button node.",
+          "hero_3d_asset_url": "OPTIONAL. Sketchfab model UID (from iframe src), GLTF/GLB file URL, or OBJ file URL found in the hero area. Empty string if none found."
         },
         "curation_gates_and_constraints": {
           "headline_word_limit": 12,
           "truncation_protocol": "If the extracted hook_headline exceeds the headline_word_limit, programmatically truncate the string at the first logical punctuation break or dependent clause.",
-          "context_fallback_alignment": "If the client's headline is highly abstract, the hook_context must prioritize explicit operational clarity to anchor what the business actually provides."
+          "3d_asset_preference": "Sketchfab UID > GLTF/GLB URL > OBJ URL > empty (triggers particle fallback)."
         }
       },
 
       "bucket_2_corporate_dna_and_the_collage": {
-        "target_component": "CollageIntroduction (Artistic Overlapping Depth Narrative)",
+        "target_component": "CollageIntroduction (Artistic Overlapping Depth Narrative with GSAP Parallax)",
         "dom_extraction_directives": [
           "Scan semantic containers tagged or labeled with 'About', 'Our Mission', 'Who We Are', 'Story', or deep-body corporate summaries.",
           "Collect content imagery from contextual body blocks, strictly skipping UI layout accents or utility vectors."
         ],
         "captured_parameters": {
-          "purpose_statement": "A single, high-impact text block containing the ultimate philosophical or identity narrative.",
-          "ambient_media_set": "A strict sequential array of image or background cinematic loop URLs representing real work, environments, products, or human interactions."
+          "intro_statement": "A single, high-impact text block containing the ultimate philosophical or identity narrative.",
+          "collage_images": "A strict sequential array of image or background cinematic loop URLs representing real work, environments, products, or human interactions."
         },
         "curation_gates_and_constraints": {
           "narrative_density_limit": "Isolate exactly one profound sentence explaining the company's purpose. Reject multi-paragraph blocks or dense blocks of biographical text.",
@@ -47,7 +50,7 @@
       },
 
       "bucket_3_the_symmetric_matrix": {
-        "target_component": "StaticOfferingsGrid (Structured Services or Products)",
+        "target_component": "StaticOfferingsGrid (Structured Services or Products with 3D Hover States)",
         "dom_extraction_directives": [
           "Locate repeating sibling HTML layout structures, modular feature matrices, product columns, or list configurations containing parallel combinations of headers, descriptions, and thumbnails."
         ],
@@ -63,19 +66,21 @@
         },
         "curation_gates_and_constraints": {
           "array_length_limit": 4,
-          "cardinality_enforcement": "The offering_units array must contain a maximum of 4 high-priority items. If the source data contains a larger set, extract only the top 3 or 4 based on DOM hierarchy or text keyword density, omitting lower-tier variations to maintain premium layout breathing room."
+          "cardinality_enforcement": "The offering_units array must contain a maximum of 4 high-priority items. If the source data contains a larger set, extract only the top 3 or 4 based on DOM hierarchy or text keyword density."
         }
       },
 
       "bucket_4_the_deep_trust_philosophy": {
-        "target_component": "TwoColumnValuePause (Asymmetric Layout Split)",
+        "target_component": "TwoColumnValuePause (Asymmetric Split with GSAP Split-Text Reveals and Optional Sketchfab Embed)",
         "dom_extraction_directives": [
-          "Target validation blocks containing elevated credibility elements, user testimonials, verified reviews, award achievements, case study headers, or executive leadership quotes."
+          "Target validation blocks containing elevated credibility elements, user testimonials, verified reviews, award achievements, case study headers, or executive leadership quotes.",
+          "Scan for Sketchfab embeds or 3D model viewers in the about/philosophy/trust sections."
         ],
         "captured_parameters": {
           "philosophy_anchor": "A singular, commanding quotation or authoritative milestone statement representing premium craftsmanship or execution.",
           "philosophy_deep_dive": "A secondary context paragraph expanding on the anchor statement to build immediate consumer trust.",
-          "singular_master_visual": "One exceptionally high-quality photography URL or 3D schematic blueprint asset designed to visually anchor the statement."
+          "singular_master_visual": "One exceptionally high-quality photography URL or 3D schematic blueprint asset designed to visually anchor the statement.",
+          "sketchfab_embed_uid": "OPTIONAL. Sketchfab model UID extracted from any iframe embed in the trust/philosophy section. Empty string if none found."
         },
         "curation_gates_and_constraints": {
           "visual_silence_isolation": "Extract exactly one primary high-trust thought or review. Suppress scrolling testimonial carousels, customer review feeds, or multi-logo walls entirely to enforce a clean layout break."
@@ -83,7 +88,7 @@
       },
 
       "bucket_5_the_final_gateway": {
-        "target_component": "ClosingCallToAction (Immersive Conversion Terminal)",
+        "target_component": "ClosingCallToAction (Immersive Conversion Terminal with Particle Field)",
         "dom_extraction_directives": [
           "Isolate trailing landing elements, final block headers, conversion targets, and lower-margin global navigation elements."
         ],
@@ -97,7 +102,7 @@
           }
         },
         "curation_gates_and_constraints": {
-          "form_suppression_rule": "High-end cinematic layouts do not compromise visual momentum with crowded input forms. If a flat site exposes multi-field input forms, completely suppress them. Condense the conversion path to a singular transactional button node designed to reveal inputs contextually or trigger clean modal overlays downstream."
+          "form_suppression_rule": "High-end cinematic layouts do not compromise visual momentum with crowded input forms. If a flat site exposes multi-field input forms, completely suppress them. Condense the conversion path to a singular transactional button node."
         }
       }
     }
