@@ -1,0 +1,148 @@
+PIPELINE V3 — ASSEMBLER GUARDRAILS
+====================================
+Absolute rules. No exceptions. No overrides.
+
+═══════════════════════════════════════
+A. PIPELINE COMPLIANCE
+═══════════════════════════════════════
+
+1. READ FIRST, BUILD SECOND
+   Read in this exact order before any output:
+     v3/guardrail_v3.txt          (this file)
+     v3/CONTEXT_LOG.md
+     v3/PIPELINE_v3.md
+     v3/stages/01-video-dna.md
+     v3/stages/02-site-blueprint.md
+     v3/stages/03-interaction-layer.md
+     v3/templates/build_base.html
+   Then confirm with exact phrase: "V3 pipeline active. Ready to receive brief."
+
+2. ALL CHECKPOINTS REQUIRED
+   BRIEF → PALETTE → PLAN → HTML → QC. No skipping. No merging steps.
+   No HTML written before PLAN_BLOCK exists in full.
+
+3. ONE SECTION AT A TIME
+   Output one section. Run layout check. Wait for approval. Then next section.
+   Never dump the full page in one output.
+
+4. STANDALONE HTML ONLY
+   No React. No Vue. No framework. No external CSS files.
+   GSAP + ScrollTrigger + Three.js from CDN. Everything else inline.
+
+═══════════════════════════════════════
+B. FORBIDDEN DEFAULTS
+═══════════════════════════════════════
+
+5. BANNED SECTION ORDER
+   Hero → About → 3-column Features → Testimonials → Contact/Footer
+   This sequence and any close variant is banned unless every section was
+   explicitly selected from the palette AND justified in PLAN_BLOCK.
+
+6. BANNED HERO
+   Centered headline + subtext + single CTA button over full-bleed media.
+   Only allowed if palette hero type A is explicitly selected and logged.
+
+7. BANNED COMPONENTS
+   - 3-column icon + title + text grids (unless palette selected)
+   - Testimonial carousels or sliders of any kind
+   - Auto-playing carousels
+   - Accordion FAQ sections with generic questions
+
+8. BANNED TYPOGRAPHY
+   - Arial, Helvetica, Times New Roman, Georgia as primary fonts
+   - Pure #ffffff or #000000 — derive near-whites/near-blacks from color palette
+   - "Welcome to [Brand]" or "We are [adjective]" headlines
+   - CTA text: "Learn More" / "Get Started" / "Click Here" / "Read More"
+
+9. BANNED ANIMATION
+   - All elements animating simultaneously on scroll — always stagger
+   - CSS-only hover with opacity change only — use GSAP or meaningful transform
+   - Animation on every element — motion must be purposeful, not decorative
+
+10. NO ASSET INVENTION
+    If a video URL or image URL is not in the brief, write:
+    [MISSING_ASSET: description of what belongs here]
+    Never guess or invent URLs.
+
+11. NO SERVER FILES — EVER
+    Never generate: .bat  .sh  .py server scripts  package.json  node_modules
+    webpack.config  vite.config  server.js  serve.py  http-server configs
+    or any file that requires a terminal or build step to run.
+    The output is ONE index.html that opens with a double-click in any browser.
+    If you feel the need to create a server file, that feeling is wrong.
+    The real problem is almost always an incorrect video path. Fix the path.
+
+12. VIDEO PATH — SAME DIRECTORY AS index.html
+    Correct:   src="{filename.mp4}"  (video sits BESIDE index.html)
+    Convention: copy the .mp4 into v3/builds/{name}/ alongside index.html
+    Forbidden: ../  ../../  C:/Users/...  absolute paths  localhost URLs
+    Reason: Chrome on file:// blocks parent-directory media traversal.
+            Same-directory src is the only reliable local approach.
+    If the exact filename was not provided: src="[MISSING_VIDEO.mp4]"
+    Do NOT guess. Do NOT use Downloads. Do NOT invent a localhost server.
+
+13. SCROLL-SCENE TEXT HIERARCHY — NON-NEGOTIABLE
+    Every scroll scene with text must follow this order:
+      Headline  → largest element, enters FIRST  (data-stagger="0")
+      Subhead   → medium element, enters SECOND  (data-stagger="1")
+      Pitch     → smallest element, enters LAST  (data-stagger="2")
+    The engine handles stagger automatically when data-stagger attributes exist.
+    Headline must be visible before subhead. Subhead before pitch. Always.
+
+14. TEXT ENTERS BY OPACITY ONLY — NO MOVEMENT
+    Text transitions: opacity 0 → 1 ONLY.
+    Never use: translateY  translateX  scale  blur  clip-path on text
+               typing effects  letter-by-letter reveals  kinetic text
+    The video provides all motion. Text is still. Text does not fight the video.
+    Exception: below-fold sections may use translateY on section wrappers only.
+
+15. TEXT POSITIONS MUST VARY ACROSS SCROLL SCENES
+    No two scroll scenes may share the same text layout.
+    Position derives from each chapter's text_safe_zone in the keyframe map.
+    If scene 1 headline is bottom-left, scene 2 must place it elsewhere.
+    Centering every headline is forbidden unless explicitly justified per scene.
+
+═══════════════════════════════════════
+C. DESIGN LAWS
+═══════════════════════════════════════
+
+11. HIERARCHY FIRST
+    Every section has a dominant element, a supporting element, and an action.
+    The eye must always know where to look first. No competing focal points.
+
+12. SPACE IS PREMIUM
+    Minimum 8rem vertical padding between sections. Never compress for space.
+    Negative space is intentional. Crowded = cheap.
+
+13. MOTION SERVES CONTENT
+    If removing an animation makes the section clearer, remove it.
+    More motion does not equal higher quality. Controlled motion = premium.
+    Sequence: reveal → stagger → hover → micro-interaction → parallax.
+
+14. SCROLL VIDEO IS THE ANCHOR
+    The 3D video scrubbing on scroll is the signature mechanic of this pipeline.
+    Implement per scroll_video_mode in PALETTE_BLOCK. Never default to ambient loop
+    unless that mode is explicitly selected from the palette.
+
+15. COLOR FROM PALETTE
+    All colors derive from PLAN_BLOCK.color_tokens CSS custom properties.
+    No hardcoded hex values in the CSS body beyond what's set on :root.
+
+═══════════════════════════════════════
+D. VARIETY ENFORCEMENT
+═══════════════════════════════════════
+
+16. FINGERPRINT RULE
+    Every build logs a fingerprint. New build must differ on 3+ dimensions
+    from the fingerprint in build-log/fingerprint-log.md.
+    If it doesn't, reselect palette options until it does.
+
+17. PALETTE IS LAW
+    Palette selections override Claude's creative instincts.
+    If palette says "nav style B — side vertical," build side vertical.
+    Do not substitute "because top nav would work better here."
+
+18. COPY IS SPECIFIC
+    Every headline, CTA, and label must be specific to this brand.
+    If copy could belong to any other brand, rewrite it.
+    Generic copy = automatic quality check failure.

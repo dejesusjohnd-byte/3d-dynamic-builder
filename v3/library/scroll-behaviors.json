@@ -1,0 +1,74 @@
+{
+  "version": "3.0",
+  "note": "These define how the 3D video background responds to page scroll. Select one ID per site in Stage 1.",
+  "behaviors": [
+
+    {
+      "id": "scrub-linear",
+      "label": "Direct Scrub — Linear",
+      "description": "Scroll position directly controls video playback time. 1:1 mapping. Video plays frame-by-frame as user scrolls.",
+      "implementation": "currentTime = (scrollY / maxScroll) * videoDuration",
+      "best_for": ["wide camera", "narrative video content", "story-driven sites"],
+      "avoid_if": ["looping ambient video", "abstract texture video"],
+      "css_note": "Set video playbackRate = 0; control via currentTime only"
+    },
+    {
+      "id": "scrub-eased",
+      "label": "Eased Scrub — Cinematic",
+      "description": "Scroll drives video time but with lerp smoothing. Video lags slightly behind scroll for cinematic feel.",
+      "implementation": "targetTime = scroll%; currentTime += (targetTime - currentTime) * 0.08 per frame",
+      "best_for": ["premium brands", "cinematic video", "storytelling", "luxury"],
+      "avoid_if": ["fast-paced interaction needed", "mobile (performance)"]
+    },
+    {
+      "id": "trigger-section",
+      "label": "Section Trigger — Video Chapters",
+      "description": "Video has defined time ranges per section. As user scrolls into a section, video jumps/plays that range and loops.",
+      "implementation": "IntersectionObserver per section; on enter play videoStart[section] → videoEnd[section], loop",
+      "best_for": ["multi-section storytelling", "video with distinct chapters"],
+      "avoid_if": ["continuous narrative video", "single-page scroll"]
+    },
+    {
+      "id": "ambient-loop",
+      "label": "Ambient Loop — Scroll-Triggered Opacity",
+      "description": "Video plays in a continuous loop at all times. Scroll only affects video opacity/blur. Different sections show video more or less.",
+      "implementation": "video.play(); loop=true; opacity = map(scrollY, sectionStart, sectionEnd, 0.2, 0.8)",
+      "best_for": ["texture/ambient video", "backgrounds with no narrative", "moody atmosphere"],
+      "avoid_if": ["video tells a story", "video has important visual information"]
+    },
+    {
+      "id": "parallax-position",
+      "label": "Video Position Parallax",
+      "description": "Video plays looped but the video element itself shifts position (translateY) on scroll, creating parallax depth.",
+      "implementation": "transform: translateY(scrollY * -0.3); video loops normally",
+      "best_for": ["wide/landscape video", "nature/environment video", "depth effect"],
+      "avoid_if": ["portrait video", "close-up detail video", "scrub-dependent narrative"]
+    },
+    {
+      "id": "scrub-reverse",
+      "label": "Reverse Scrub on Up-Scroll",
+      "description": "Video plays forward on scroll-down, plays in reverse on scroll-up. Highly interactive feel.",
+      "implementation": "Store scroll direction; if direction=up, playbackRate=-1; else playbackRate=1",
+      "best_for": ["portfolio", "interactive showcase", "brands that want to stand out"],
+      "avoid_if": ["mobile-first", "video with audio", "long video durations (performance)"],
+      "note": "Not all browsers support negative playbackRate — use currentTime scrub instead"
+    },
+    {
+      "id": "blend-multiply",
+      "label": "Blend Mode — Multiply / Screen",
+      "description": "Video uses CSS mix-blend-mode: multiply or screen to blend with background color. Creates duotone/color treatment.",
+      "implementation": "video { mix-blend-mode: multiply; } body background = accent color",
+      "best_for": ["editorial", "duotone branded look", "strong brand color"],
+      "avoid_if": ["realistic video that should look natural", "light/pastel video"],
+      "combine_with": ["ambient-loop", "parallax-position"]
+    },
+    {
+      "id": "mask-reveal",
+      "label": "Scroll-Driven Mask Reveal",
+      "description": "Video is masked (hidden) initially. Scroll reveals the video through a growing clip-path mask.",
+      "implementation": "clip-path grows from center or from section top based on scrollY progress",
+      "best_for": ["dramatic reveals", "section-specific video moments", "premium brands"],
+      "avoid_if": ["ambient background video needs", "always-visible video"]
+    }
+  ]
+}

@@ -1,0 +1,188 @@
+{
+  "version": "3.0",
+  "note": "Select archetypes by ID. Do not invent generic sections. If no archetype fits, pick the closest and document the delta.",
+  "archetypes": {
+
+    "hero": [
+      {
+        "id": "hero-immersive-scroll",
+        "label": "Full Bleed Scroll-Reveal Hero",
+        "layout": "Video fills 100vw × 100vh. Text appears on scroll, not on load. CTA fades in at 30% scroll.",
+        "when_to_use": ["wide camera framing", "cinematic mood", "premium", "immersive"],
+        "when_not_to_use": ["urgent action needed immediately", "information-heavy", "playful/casual brands"],
+        "required_elements": ["full-bleed video", "minimal text on load", "scroll indicator"],
+        "forbidden_elements": ["hero nav overlay", "multiple CTAs", "subtitle text block on load"]
+      },
+      {
+        "id": "hero-split-tension",
+        "label": "Split Hero — Video / Typography",
+        "layout": "50/50 or 60/40 vertical split. Video one side, bold typography other side. CTA in text column.",
+        "when_to_use": ["medium camera framing", "product-focused", "direct/confident brand adjectives"],
+        "when_not_to_use": ["abstract video content", "single-page storytelling", "minimal brands"],
+        "required_elements": ["split divider", "oversized headline", "single CTA"],
+        "forbidden_elements": ["centered text", "gradient overlay on video side"]
+      },
+      {
+        "id": "hero-texture-type",
+        "label": "Texture Background + Heavy Typography",
+        "layout": "Video runs at low opacity as texture. Enormous display type dominates. Almost no layout — just type.",
+        "when_to_use": ["close camera framing", "raw/industrial/editorial mood", "type-forward brands"],
+        "when_not_to_use": ["warm/inviting brands", "service businesses needing trust signals"],
+        "required_elements": ["video at ≤40% opacity", "display type ≥96px", "high contrast"],
+        "forbidden_elements": ["subheadline", "hero image overlay", "rounded corners"]
+      },
+      {
+        "id": "hero-asymmetric-grid",
+        "label": "Asymmetric Grid Hero",
+        "layout": "CSS grid hero with unequal columns. Video in one grid cell (not full-bleed). Elements break the grid intentionally.",
+        "when_to_use": ["editorial brands", "portfolio", "creative agencies"],
+        "when_not_to_use": ["corporate/formal", "mass market", "high-urgency action"]
+      },
+      {
+        "id": "hero-minimal-dark",
+        "label": "Minimal Dark Hero — Single Element Focus",
+        "layout": "Dark background, video as ambient light source. One headline, one CTA, nothing else above fold.",
+        "when_to_use": ["premium/luxury", "mysterious/dark mood", "tech products"],
+        "when_not_to_use": ["warm brands", "family/community sites", "high information density needs"]
+      },
+      {
+        "id": "hero-bottom-anchor",
+        "label": "Anchored Bottom Text Hero",
+        "layout": "Full-bleed video top, text block anchored to bottom edge of viewport. Text appears to ground the video.",
+        "when_to_use": ["landscape video", "expansive/wide framing", "nature/outdoor brands"],
+        "when_not_to_use": ["mobile-first critical", "action-urgent"]
+      }
+    ],
+
+    "navigation": [
+      {
+        "id": "nav-ghost-minimal",
+        "label": "Ghost Minimal Nav",
+        "layout": "Transparent background, no border, minimal items (≤4). Becomes subtle on scroll.",
+        "when_to_use": ["premium", "immersive video hero", "cinematic"],
+        "when_not_to_use": ["many pages", "information sites", "complex navigation needs"]
+      },
+      {
+        "id": "nav-side-vertical",
+        "label": "Side Vertical Nav",
+        "layout": "Fixed to left or right side of screen. Items listed vertically. Unusual — high distinctiveness.",
+        "when_to_use": ["editorial", "portfolio", "single-page scrolling sites"],
+        "when_not_to_use": ["e-commerce", "mobile-first", "sites with many pages"]
+      },
+      {
+        "id": "nav-bottom-fixed",
+        "label": "Bottom Fixed Nav",
+        "layout": "Navigation anchored to bottom of screen. App-like. Items icon+label.",
+        "when_to_use": ["mobile-first", "app-adjacent products", "younger audience"],
+        "when_not_to_use": ["professional services", "luxury brands", "complex desktop experiences"]
+      },
+      {
+        "id": "nav-bold-full",
+        "label": "Bold Persistent Nav with CTA",
+        "layout": "Full-width nav bar with brand name left, items center, CTA button right. Stays visible.",
+        "when_to_use": ["lead generation", "booking", "urgent action needed"],
+        "when_not_to_use": ["cinematic/immersive hero", "portfolio", "editorial"]
+      },
+      {
+        "id": "nav-hidden-reveal",
+        "label": "Hidden Nav — Scroll Up to Reveal",
+        "layout": "Nav hidden on load. Appears when user scrolls up (intent signal).",
+        "when_to_use": ["immersive storytelling", "scroll-heavy experiences"],
+        "when_not_to_use": ["discovery-dependent sites", "first-time user onboarding critical"]
+      }
+    ],
+
+    "content": [
+      {
+        "id": "content-staggered-cards",
+        "label": "Staggered Card Grid",
+        "layout": "Cards in an offset/staggered grid, not aligned to a rigid column. Cards reveal on scroll with stagger delay.",
+        "when_to_use": ["portfolio", "product listings", "team sections"],
+        "when_not_to_use": ["linear narrative", "dense information"]
+      },
+      {
+        "id": "content-horizontal-scroll",
+        "label": "Horizontal Scroll Section",
+        "layout": "Section scrolls horizontally while page scrolls vertically. Items pass left-to-right on scroll.",
+        "when_to_use": ["timeline", "product gallery", "feature showcase"],
+        "when_not_to_use": ["accessibility-critical", "text-heavy content"]
+      },
+      {
+        "id": "content-sticky-reveal",
+        "label": "Sticky Scroll Reveal",
+        "layout": "Left column sticks while right content scrolls through multiple points. Transforms text/image pairs.",
+        "when_to_use": ["feature explanation", "process steps", "before/after"],
+        "when_not_to_use": ["brief content", "mobile-first priority"]
+      },
+      {
+        "id": "content-editorial-prose",
+        "label": "Editorial Full-Width Prose",
+        "layout": "Full-width text with generous margins. Mix of display and body type. Occasional full-bleed image break.",
+        "when_to_use": ["about pages", "brand storytelling", "editorial/cultural brands"],
+        "when_not_to_use": ["feature lists", "product specs", "e-commerce"]
+      },
+      {
+        "id": "content-data-table",
+        "label": "Styled Comparison/Data Table",
+        "layout": "Clean tabular data with custom styling. Rows animate in on scroll.",
+        "when_to_use": ["pricing", "feature comparison", "specifications"],
+        "when_not_to_use": ["narrative brands", "emotional storytelling"]
+      },
+      {
+        "id": "content-manifesto",
+        "label": "Full-Screen Manifesto",
+        "layout": "One or two lines of massive text per screen height. Text scrolls through like a cinematic sequence.",
+        "when_to_use": ["brand statement", "about section with strong voice", "premium/bold brands"],
+        "when_not_to_use": ["information-dense needs", "e-commerce", "service businesses"]
+      }
+    ],
+
+    "cta": [
+      {
+        "id": "cta-full-screen-break",
+        "label": "Full-Screen CTA Break",
+        "layout": "Full viewport CTA section. Video or color fill. Single headline, single button. Nothing else.",
+        "when_to_use": ["mid-page re-engagement", "strong emotional brands"],
+        "when_not_to_use": ["early in page", "low-trust moments"]
+      },
+      {
+        "id": "cta-inline-ambient",
+        "label": "Inline Ambient CTA",
+        "layout": "CTA embedded within content flow, not a separate section. Feels like part of the content.",
+        "when_to_use": ["editorial", "storytelling sites", "brands that avoid hard-sell"],
+        "when_not_to_use": ["high-conversion urgency", "e-commerce product pages"]
+      },
+      {
+        "id": "cta-sticky-bar",
+        "label": "Sticky Bottom CTA Bar",
+        "layout": "Thin bar appears after first scroll. Contains one CTA. Dismissible.",
+        "when_to_use": ["lead gen", "booking", "high urgency"],
+        "when_not_to_use": ["immersive experiences", "art/portfolio"]
+      }
+    ],
+
+    "footer": [
+      {
+        "id": "footer-large-statement",
+        "label": "Large Statement Footer",
+        "layout": "Footer opens with huge headline (brand name or tagline). Links in small text below.",
+        "when_to_use": ["premium", "bold brands", "portfolio"],
+        "when_not_to_use": ["utility-heavy sites", "e-commerce with many footer links"]
+      },
+      {
+        "id": "footer-minimal-strip",
+        "label": "Minimal Single-Row Footer",
+        "layout": "One row: logo left, links center, legal right. Nothing more.",
+        "when_to_use": ["minimalist sites", "immersive single-page", "portfolio"],
+        "when_not_to_use": ["complex multi-page sites", "SEO-heavy sites"]
+      },
+      {
+        "id": "footer-editorial-column",
+        "label": "Editorial Multi-Column Footer",
+        "layout": "3–4 columns. Brand column with description, nav links, contact, social. Rich but clean.",
+        "when_to_use": ["business sites", "multi-page sites", "trust-building brands"],
+        "when_not_to_use": ["single-page portfolio", "immersive experiences"]
+      }
+    ]
+  }
+}

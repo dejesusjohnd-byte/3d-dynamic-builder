@@ -1,0 +1,99 @@
+{
+  "_meta": {
+    "brief_source": "brief_quinn_tax.json",
+    "generated_by": "Claude",
+    "pipeline_version": "v2",
+    "variant_id": "01_LawFirm_WarmAuthority"
+  },
+
+  "theme_token": "warm_earth",
+  "motion_tempo": "slow_luxury",
+
+  "section_order": [
+    "Navigation",
+    "HeroSection",
+    "CollageIntroduction",
+    "StaticOfferingsGrid",
+    "TextEditorial",
+    "TwoColumnValuePause",
+    "ClosingCallToAction"
+  ],
+
+  "chapter_label_overrides": {
+    "HeroSection":           "01 / PRINCIPAL ARRIVAL",
+    "CollageIntroduction":   "02 / FOUNDATION",
+    "StaticOfferingsGrid":   "03 / PRACTICE AREAS",
+    "TextEditorial":         "04 / PHILOSOPHY",
+    "TwoColumnValuePause":   "05 / GUIDING PRINCIPLE",
+    "ClosingCallToAction":   "06 / FINAL TERMINAL"
+  },
+
+  "Navigation": {
+    "brand_identity_string": "QUINN GLOBAL",
+    "navigation_menu_array": [
+      { "link_label": "Practice", "scroll_anchor_id": "offerings" },
+      { "link_label": "Philosophy", "scroll_anchor_id": "editorial" },
+      { "link_label": "Contact", "scroll_anchor_id": "cta" }
+    ],
+    "action_button_label": "Schedule Consultation"
+  },
+
+  "HeroSection": {
+    "hook_headline": "Every angle covered. Every jurisdiction secured.",
+    "hook_context": "Quinn Global Tax Law engineers tax structures for the world's most complex estates and multinational operations.",
+    "primary_action_label": "Begin Consultation",
+    "depth_layer_one_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920"
+  },
+
+  "CollageIntroduction": {
+    "introStatement": "Decades of precision across the world's most demanding tax environments.",
+    "collageImages": [
+      "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800",
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
+      "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800",
+      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800"
+    ]
+  },
+
+  "StaticOfferingsGrid": {
+    "offering_units": [
+      {
+        "item_title": "International Tax Strategy",
+        "item_summary": "Cross-border structuring for multinational entities and family offices operating across jurisdictions.",
+        "item_cover_url": "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800"
+      },
+      {
+        "item_title": "Wealth Preservation",
+        "item_summary": "Long-term asset protection frameworks built to withstand regulatory change across multiple legal systems.",
+        "item_cover_url": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800"
+      },
+      {
+        "item_title": "Legal Advisory",
+        "item_summary": "Airtight counsel for the most complex regulatory environments — from treaty interpretation to compliance architecture.",
+        "item_cover_url": "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800"
+      }
+    ]
+  },
+
+  "TextEditorial": {
+    "editorial_header": "The world doesn't wait. Neither should your tax position.",
+    "editorial_body_paragraphs": [
+      "Quinn Global was founded on a single belief: that the most sophisticated legal minds should be accessible to those who need them most — not just the largest institutions.",
+      "We operate across more than 40 jurisdictions, building tax structures that are not merely compliant, but architecturally sound for the next decade of regulatory evolution."
+    ]
+  },
+
+  "TwoColumnValuePause": {
+    "philosophy_anchor": "Protect what's yours. In every jurisdiction. At every scale.",
+    "philosophy_deep_dive": "Our approach begins with understanding the full picture — the assets, the entities, the timelines, the risks. Only then do we engineer. The result is not just a tax strategy. It is a defensive architecture built for permanence.",
+    "singular_master_visual": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200",
+    "sketchfab_embed_uid": null
+  },
+
+  "ClosingCallToAction": {
+    "closing_invitation": "Your global position deserves global-grade protection.",
+    "target_conversion_label": "Initiate Briefing",
+    "corporate_copyright": "© 2025 Quinn Global Tax Law. All rights reserved.",
+    "direct_contact_strings": "contact@quinnglobal.com"
+  }
+}

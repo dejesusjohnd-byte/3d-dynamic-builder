@@ -1,0 +1,5 @@
+# Removed — never used in any build
+v4/builds/Bike Breakdown/references/free_dirt_road_through_forest.glb
+
+# Videos — too large for git, store separately
+*.mp4

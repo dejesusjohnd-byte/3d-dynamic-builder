@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Papa's Burger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --color-bg:           #100B06;
+      --color-surface:      #1A1208;
+      --color-text:         #F0E8D0;
+      --color-muted:        #6A5A3A;
+      --color-accent:       #D4883A;
+      --color-accent-hover: #E8A050;
+      --font-display:       'Playfair Display', Georgia, serif;
+      --font-body:          'DM Sans', system-ui, sans-serif;
+    }
+
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      cursor: none;
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; }
+
+    /* ── Custom Cursor ──────────────────────────────────────── */
+    #cursor {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.12s ease, width 0.25s ease, height 0.25s ease, opacity 0.25s ease;
+      mix-blend-mode: normal;
+    }
+    #cursor.hovering {
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: 1.5px solid var(--color-accent);
+    }
+    #cursor.clicking { transform: translate(-50%, -50%) scale(0.7); }
+
+    /* ── Scroll Progress ────────────────────────────────────── */
+    #scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2px;
+      width: 0%;
+      background: var(--color-accent);
+      z-index: 200;
+      pointer-events: none;
+      transition: width 0.05s linear;
+    }
+
+    /* ── Scroll Container ───────────────────────────────────── */
+    #v3-scroll-container {
+      height: 700vh;
+      position: relative;
+    }
+
+    /* ── Sticky Wrapper ─────────────────────────────────────── */
+    #v3-video-wrapper {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      background: var(--color-bg);
+    }
+
+    /* ── Video ──────────────────────────────────────────────── */
+    #v3-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    /* ── Scenes ─────────────────────────────────────────────── */
+    .v3-scene {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    [data-stagger] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      line-height: 1.05;
+    }
+
+    /* ── Scene Typography ───────────────────────────────────── */
+    .v3-headline {
+      font-family: var(--font-display);
+      font-weight: 900;
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+      max-width: 14ch;
+      text-shadow: 0 2px 40px rgba(0,0,0,0.75), 0 1px 8px rgba(0,0,0,0.5);
+    }
+    .v3-subhead {
+      font-family: var(--font-body);
+      font-weight: 400;
+      color: var(--color-text);
+      letter-spacing: 0.01em;
+      max-width: 36ch;
+      text-shadow: 0 1px 20px rgba(0,0,0,0.85);
+    }
+    .v3-pitch {
+      font-family: var(--font-body);
+      font-weight: 300;
+      color: var(--color-muted);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      text-shadow: 0 1px 12px rgba(0,0,0,0.9);
+    }
+    .v3-cta-btn {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-bg);
+      background: var(--color-accent);
+      padding: 0.85rem 2.2rem;
+      pointer-events: all;
+      cursor: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .v3-cta-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--color-accent-hover);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .v3-cta-btn:hover::before { transform: scaleX(1); }
+    .v3-cta-btn span { position: relative; z-index: 1; }
+
+    /* ── Scene 1: intact ────────────────────────────────────── */
+    #scene-intact .v3-headline { font-size: clamp(2.5rem, 5vw, 5rem); top: 8%; left: 6%; }
+    #scene-intact .v3-subhead  { font-size: 1.1rem; right: 6%; bottom: 14%; text-align: right; max-width: 30ch; }
+    #scene-intact .v3-pitch    { left: 6%; bottom: 5%; }
+
+    /* ── Scene 2: breaking ──────────────────────────────────── */
+    #scene-breaking .v3-headline { font-size: clamp(2.5rem, 5.5vw, 5.5rem); top: 10%; right: 6%; text-align: right; max-width: 12ch; }
+    #scene-breaking .v3-subhead  { font-size: 1rem; left: 6%; top: 60%; max-width: 32ch; }
+    #scene-breaking .v3-pitch    { left: 6%; bottom: 7%; }
+
+    /* ── Scene 3: floating ──────────────────────────────────── */
+    #scene-floating .v3-headline { font-size: clamp(2rem, 4.5vw, 4.5rem); top: 7%; left: 0; right: 0; text-align: center; max-width: none; }
+    #scene-floating .v3-subhead  { font-size: 1rem; left: 0; right: 0; top: 50%; text-align: center; max-width: none; }
+    #scene-floating .v3-pitch    { left: 0; right: 0; bottom: 8%; text-align: center; }
+
+    /* ── Scene 4: reassembling ──────────────────────────────── */
+    #scene-reassembling .v3-headline { font-size: clamp(2.5rem, 5vw, 5rem); top: 12%; left: 6%; max-width: 11ch; }
+    #scene-reassembling .v3-subhead  { font-size: 1rem; right: 6%; bottom: 16%; text-align: right; max-width: 28ch; }
+    #scene-reassembling .v3-pitch    { left: 0; right: 0; bottom: 6%; text-align: center; letter-spacing: 0.2em; }
+
+    /* ── Scene 5: complete ──────────────────────────────────── */
+    #scene-complete .v3-headline { font-size: clamp(2.2rem, 4.5vw, 4.5rem); top: 10%; right: 6%; text-align: right; max-width: 13ch; }
+    #scene-complete .v3-subhead  { font-size: 1.15rem; font-style: italic; font-family: var(--font-display); font-weight: 400; left: 6%; bottom: 20%; max-width: 24ch; }
+    #scene-complete .v3-pitch    { right: 6%; bottom: 13%; }
+    #scene-complete .v3-cta-btn  { left: 6%; bottom: 5%; }
+
+    /* ── Nav ────────────────────────────────────────────────── */
+    #v3-nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 2.5rem;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #v3-nav.nav-visible { opacity: 1; pointer-events: all; }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--color-text);
+      letter-spacing: 0.02em;
+      cursor: none;
+    }
+    .nav-right { display: flex; align-items: center; gap: 2.5rem; }
+    .nav-link {
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      cursor: none;
+      position: relative;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px; left: 0; right: 0;
+      height: 1px;
+      background: var(--color-accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .nav-link:hover::after { transform: scaleX(1); }
+    .nav-link:hover { color: var(--color-text); }
+    .nav-order {
+      font-family: var(--font-body);
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-bg);
+      background: var(--color-accent);
+      padding: 0.6rem 1.4rem;
+      cursor: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .nav-order::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--color-accent-hover);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+    .nav-order:hover::before { transform: scaleX(1); }
+    .nav-order span { position: relative; z-index: 1; }
+
+    /* ── Scroll Hint ────────────────────────────────────────── */
+    .scroll-hint {
+      position: absolute;
+      bottom: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: none;
+      z-index: 10;
+      transition: opacity 0.8s ease;
+    }
+    .scroll-hint.hidden { opacity: 0; }
+    .scroll-hint span {
+      font-family: var(--font-body);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+    .scroll-hint-line {
+      width: 1px; height: 36px;
+      background: var(--color-muted);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 0.3; transform: scaleY(0.5); transform-origin: top; }
+      50%      { opacity: 1;   transform: scaleY(1);   transform-origin: top; }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       BELOW FOLD
+    ════════════════════════════════════════════════════════ */
+    #v3-below-fold { opacity: 0; background: var(--color-bg); }
+
+    /* ── Section: Story (asymmetric) ────────────────────────── */
+    .section-story {
+      padding: 10rem 0 8rem;
+      position: relative;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    /* Big decorative index pulled left, bleeds */
+    .story-index {
+      position: absolute;
+      top: 6rem;
+      left: -1rem;
+      font-family: var(--font-display);
+      font-size: clamp(8rem, 18vw, 16rem);
+      font-weight: 900;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(212,136,58,0.15);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+    .story-inner {
+      display: grid;
+      grid-template-columns: 42% 1fr;
+      padding: 0 6%;
+      gap: 4rem;
+      align-items: start;
+    }
+    .story-left { padding-top: 2rem; }
+    .story-eyebrow {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .story-eyebrow::before { content: ''; display: block; width: 2rem; height: 1px; background: var(--color-accent); }
+    .story-headline {
+      font-family: var(--font-display);
+      font-size: clamp(2.4rem, 4.5vw, 4.2rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      color: var(--color-text);
+    }
+    .story-headline em {
+      font-style: italic;
+      color: var(--color-accent);
+    }
+    .story-right { padding-top: 5rem; }
+    .story-body {
+      font-family: var(--font-body);
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.85;
+      color: var(--color-muted);
+      max-width: 38ch;
+      margin-bottom: 4rem;
+    }
+    .story-stats {
+      display: flex;
+      gap: 3.5rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .stat { }
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: var(--color-accent);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+    .stat-label {
+      font-family: var(--font-body);
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-top: 0.4rem;
+    }
+    /* One stat is deliberately smaller — asymmetric sizing */
+    .stat:nth-child(2) .stat-num { font-size: 1.8rem; color: var(--color-muted); }
+    .stat:nth-child(4) .stat-num { font-size: 3.6rem; }
+
+    /* ── Section: The Build (editorial list) ─────────────────── */
+    .section-build {
+      padding: 6rem 0 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .build-header {
+      display: grid;
+      grid-template-columns: 6% 1fr auto;
+      align-items: baseline;
+      padding: 0 6% 0 0;
+      margin-bottom: 3rem;
+    }
+    .build-num-col { /* spacer */ }
+    .build-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+    }
+    .build-count {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+    /* Each row */
+    .build-row {
+      display: grid;
+      grid-template-columns: 6% 3fr 2fr 1fr;
+      align-items: start;
+      padding: 2rem 6% 2rem 0;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      cursor: none;
+      transition: background 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .build-row::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--color-surface);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+      z-index: 0;
+    }
+    .build-row:hover::before { transform: scaleX(1); }
+    .build-row > * { position: relative; z-index: 1; }
+
+    .build-index {
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      font-weight: 400;
+      color: var(--color-accent);
+      padding-left: 6%;
+      padding-top: 0.3rem;
+    }
+    .build-name {
+      font-family: var(--font-display);
+      font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+    }
+    /* Sub-label under name, hidden by default, reveals on hover */
+    .build-sublabel {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 300;
+      color: var(--color-muted);
+      margin-top: 0.6rem;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease;
+      line-height: 1.6;
+      max-width: 36ch;
+    }
+    .build-row:hover .build-sublabel { max-height: 5rem; opacity: 1; }
+
+    .build-desc {
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 300;
+      color: var(--color-muted);
+      line-height: 1.6;
+      padding-top: 0.4rem;
+      max-width: 28ch;
+    }
+    .build-tag {
+      font-family: var(--font-body);
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 0.3rem 0.7rem;
+      align-self: center;
+      justify-self: end;
+      transition: border-color 0.3s ease, color 0.3s ease;
+    }
+    .build-row:hover .build-tag { border-color: var(--color-accent); color: var(--color-accent); }
+
+    /* Last row — no bottom border, add extra padding */
+    .build-row:last-child { padding-bottom: 5rem; }
+
+    /* ── Section: CTA (dramatic asymmetric) ─────────────────── */
+    .section-cta {
+      background: var(--color-surface);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+      overflow: hidden;
+      padding: 0;
+    }
+    /* Huge background word — decorative bleed */
+    .cta-bg-word {
+      position: absolute;
+      bottom: -1rem;
+      left: -2vw;
+      font-family: var(--font-display);
+      font-size: clamp(10rem, 22vw, 22rem);
+      font-weight: 900;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(212,136,58,0.07);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .cta-inner {
+      display: grid;
+      grid-template-columns: 1fr 38%;
+      align-items: end;
+      padding: 8rem 6% 8rem;
+      gap: 4rem;
+      position: relative;
+      z-index: 1;
+    }
+    .cta-left { }
+    .cta-eyebrow {
+      font-family: var(--font-body);
+      font-size: 0.62rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .cta-eyebrow::before { content: ''; display: block; width: 2rem; height: 1px; background: var(--color-accent); }
+    /* Oversized headline — intentionally overflows left */
+    .cta-headline {
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 9vw, 9rem);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.035em;
+      color: var(--color-text);
+      margin-left: -0.05em; /* optical alignment left-bleed */
+    }
+    .cta-headline .accent-line {
+      display: block;
+      color: var(--color-accent);
+      font-style: italic;
+    }
+    .cta-right {
+      padding-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2rem;
+    }
+    .cta-sub {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--color-muted);
+      max-width: 28ch;
+    }
+    .cta-action {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    .cta-main-btn {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-bg);
+      background: var(--color-accent);
+      padding: 1rem 3rem;
+      cursor: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-main-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--color-accent-hover);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .cta-main-btn:hover::before { transform: scaleX(1); }
+    .cta-main-btn span { position: relative; z-index: 1; }
+    .cta-note {
+      font-family: var(--font-body);
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    .section-footer {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 2.5rem 6%;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      gap: 2rem;
+    }
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--color-muted);
+    }
+    .footer-center {
+      font-family: var(--font-body);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      opacity: 0.4;
+      text-align: center;
+    }
+    .footer-right {
+      text-align: right;
+      font-family: var(--font-body);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      opacity: 0.4;
+    }
+
+    /* ── Reveal on scroll (below fold) ──────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(2rem);
+      transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.22s; }
+    .reveal-delay-3 { transition-delay: 0.36s; }
+    .reveal-delay-4 { transition-delay: 0.52s; }
+
+    /* ── Mobile ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      body { cursor: auto; }
+      #cursor { display: none; }
+      .story-inner { grid-template-columns: 1fr; gap: 3rem; }
+      .build-row { grid-template-columns: auto 1fr; gap: 1rem; }
+      .build-desc, .build-tag { display: none; }
+      .cta-inner { grid-template-columns: 1fr; }
+      .section-footer { grid-template-columns: 1fr; text-align: center; }
+      #v3-nav { padding: 1.25rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div id="cursor"></div>
+
+  <!-- Scroll Progress Bar -->
+  <div id="scroll-progress"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCROLL CONTAINER
+  ═══════════════════════════════════════════════════════ -->
+  <div id="v3-scroll-container">
+    <div id="v3-video-wrapper">
+
+      <video id="v3-video" muted playsinline preload="auto">
+        <source src="burger.mp4" type="video/mp4">
+      </video>
+
+      <!-- Scene 1 — Intact -->
+      <div class="v3-scene" id="scene-intact">
+        <p class="v3-headline" data-stagger="0">This Is<br>the Standard</p>
+        <p class="v3-subhead"  data-stagger="1">Everything you expect.<br>Nothing less.</p>
+        <p class="v3-pitch"    data-stagger="2">Premium Beef · Brioche · House Sauce</p>
+      </div>
+
+      <!-- Scene 2 — Breaking Apart -->
+      <div class="v3-scene" id="scene-breaking">
+        <p class="v3-headline" data-stagger="0">Every<br>Layer,<br>Earned</p>
+        <p class="v3-subhead"  data-stagger="1">We don't hide what's inside.</p>
+        <p class="v3-pitch"    data-stagger="2">Crafted. Not assembled.</p>
+      </div>
+
+      <!-- Scene 3 — Floating -->
+      <div class="v3-scene" id="scene-floating">
+        <p class="v3-headline" data-stagger="0">Fresh.<br>Always.</p>
+        <p class="v3-subhead"  data-stagger="1">Sourced daily. No exceptions.</p>
+        <p class="v3-pitch"    data-stagger="2">Every ingredient chosen on purpose.</p>
+      </div>
+
+      <!-- Scene 4 — Reassembling -->
+      <div class="v3-scene" id="scene-reassembling">
+        <p class="v3-headline" data-stagger="0">Back<br>to One</p>
+        <p class="v3-subhead"  data-stagger="1">Perfected, every time.</p>
+        <p class="v3-pitch"    data-stagger="2">Papa's Burger</p>
+      </div>
+
+      <!-- Scene 5 — Complete (+ hero CTA) -->
+      <div class="v3-scene" id="scene-complete">
+        <p class="v3-headline" data-stagger="0">Now You<br>Know Why.</p>
+        <p class="v3-subhead"  data-stagger="1">Come get one.</p>
+        <p class="v3-pitch"    data-stagger="2">Open Daily</p>
+        <a class="v3-cta-btn"  data-stagger="3" href="#order"><span>Order Now &rarr;</span></a>
+      </div>
+
+      <!-- Nav -->
+      <nav id="v3-nav">
+        <a class="nav-logo" href="#">Papa's</a>
+        <div class="nav-right">
+          <a class="nav-link" href="#story">Story</a>
+          <a class="nav-link" href="#build">The Build</a>
+          <a class="nav-order" href="#order"><span>Order Now</span></a>
+        </div>
+      </nav>
+
+      <!-- Scroll hint -->
+      <div class="scroll-hint" id="scroll-hint">
+        <span>Scroll</span>
+        <div class="scroll-hint-line"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       BELOW FOLD
+  ═══════════════════════════════════════════════════════ -->
+  <div id="v3-below-fold">
+
+    <!-- STORY -->
+    <section class="section-story" id="story">
+      <div class="story-index" aria-hidden="true">01</div>
+      <div class="story-inner">
+        <div class="story-left">
+          <p class="story-eyebrow reveal">The Origin</p>
+          <h2 class="story-headline reveal reveal-delay-1">
+            Papa Started<br>With <em>One</em><br>Obsession.
+          </h2>
+        </div>
+        <div class="story-right">
+          <p class="story-body reveal reveal-delay-2">
+            Not a brand strategy. Not a menu deck.<br>
+            An obsession with getting every single part right—
+            the grind, the char, the bun-to-beef ratio.
+            Every Papa's Burger is built the same way it was on day one.
+            With your hands, not a timer.
+          </p>
+          <div class="story-stats">
+            <div class="stat reveal reveal-delay-2">
+              <div class="stat-num">100%</div>
+              <div class="stat-label">Fresh Beef Daily</div>
+            </div>
+            <div class="stat reveal reveal-delay-3">
+              <div class="stat-num">0</div>
+              <div class="stat-label">Frozen Patties</div>
+            </div>
+            <div class="stat reveal reveal-delay-3">
+              <div class="stat-num">3</div>
+              <div class="stat-label">Sauces</div>
+            </div>
+            <div class="stat reveal reveal-delay-4">
+              <div class="stat-num">1</div>
+              <div class="stat-label">Standard</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- THE BUILD -->
+    <section class="section-build" id="build">
+      <div class="build-header">
+        <div class="build-num-col"></div>
+        <h2 class="build-title reveal">What's Inside Matters</h2>
+        <span class="build-count reveal">03 Components</span>
+      </div>
+
+      <div class="build-row">
+        <div class="build-index">01</div>
+        <div class="build-name">
+          The Beef
+          <div class="build-sublabel">80/20 chuck blend, ground fresh every morning. Salt and heat. That's the whole recipe.</div>
+        </div>
+        <div class="build-desc">80/20 chuck blend, ground fresh daily. No fillers, no binders.</div>
+        <div class="build-tag">Foundation</div>
+      </div>
+
+      <div class="build-row">
+        <div class="build-index">02</div>
+        <div class="build-name">
+          The Brioche
+          <div class="build-sublabel">Toasted on the flat top until the crust holds. Light enough not to compete with what's inside.</div>
+        </div>
+        <div class="build-desc">Butter-enriched, baked soft. Toasted until the crust holds.</div>
+        <div class="build-tag">Structure</div>
+      </div>
+
+      <div class="build-row">
+        <div class="build-index">03</div>
+        <div class="build-name">
+          The Sauce
+          <div class="build-sublabel">Three versions. The house recipe hasn't changed since day one. You'll come back for it.</div>
+        </div>
+        <div class="build-desc">Three versions. House recipe unchanged since day one.</div>
+        <div class="build-tag">Signature</div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section-cta" id="order">
+      <div class="cta-bg-word" aria-hidden="true">ORDER</div>
+      <div class="cta-inner">
+        <div class="cta-left">
+          <p class="cta-eyebrow reveal">Ready When You Are</p>
+          <h2 class="cta-headline reveal reveal-delay-1">
+            One<br>Burger.
+            <span class="accent-line">No<br>Compromise.</span>
+          </h2>
+        </div>
+        <div class="cta-right">
+          <p class="cta-sub reveal reveal-delay-2">
+            Skip the delivery fee. Come in, sit down. Or don't — the window's open.
+          </p>
+          <div class="cta-action reveal reveal-delay-3">
+            <a class="cta-main-btn" href="#"><span>Order Now &rarr;</span></a>
+            <p class="cta-note">Daily · Dine In · Takeout · No Reservations</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="section-footer">
+      <span class="footer-brand">Papa's Burger</span>
+      <span class="footer-center">Every layer, earned.</span>
+      <span class="footer-right">Open Daily</span>
+    </footer>
+
+  </div><!-- end below fold -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       CONFIG
+  ═══════════════════════════════════════════════════════ -->
+  <script>
+  window.V3_CONFIG = {
+    scrubMode:  'full',
+    videoRatio:  0.65,
+    fadeRange:   0.025,
+    staggerLag:  0.55,
+    nav: { showAfter: 0.04 },
+    scenes: [
+      { id: 'scene-intact',       start: 0.00, end: 0.13 },
+      { id: 'scene-breaking',     start: 0.13, end: 0.26 },
+      { id: 'scene-floating',     start: 0.26, end: 0.39 },
+      { id: 'scene-reassembling', start: 0.39, end: 0.52 },
+      { id: 'scene-complete',     start: 0.52, end: 0.65 }
+    ]
+  };
+  </script>
+
+  <!-- ENGINE START — DO NOT MODIFY -->
+  <script>
+  (function V3Engine() {
+    'use strict';
+    var cfg         = window.V3_CONFIG   || {};
+    var SCRUB_MODE  = cfg.scrubMode      || 'full';
+    var VIDEO_RATIO = cfg.videoRatio     || 0.65;
+    var FADE_RANGE  = cfg.fadeRange      || 0.025;
+    var EASED       = SCRUB_MODE         === 'eased';
+    var STAGGER_LAG = cfg.staggerLag     || 0.55;
+    var video, maxScroll, raf;
+    var lerpTime = 0, targetTime = 0;
+
+    function init() {
+      video = document.getElementById('v3-video');
+      if (!video) { console.warn('[V3] #v3-video not found.'); return; }
+      video.muted = true; video.playsInline = true; video.preload = 'auto';
+
+      if (SCRUB_MODE === 'ambient') {
+        video.loop = true; video.play().catch(function(){});
+      } else {
+        video.load();
+        video.addEventListener('loadedmetadata', function() {
+          video.play().then(function() {
+            video.pause(); video.currentTime = 0.001;
+          }).catch(function() { try { video.currentTime = 0.001; } catch(e){} });
+        }, { once: true });
+        document.addEventListener('touchstart', function unlockVideo() {
+          video.play().then(function() { video.pause(); video.currentTime = 0; });
+          document.removeEventListener('touchstart', unlockVideo);
+        }, { once: true });
+      }
+
+      measure();
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', measure);
+    }
+
+    function measure() {
+      maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+    }
+
+    function onScroll() { if (!raf) raf = requestAnimationFrame(tick); }
+
+    function tick() {
+      raf = null;
+      var p = window.scrollY / maxScroll;
+      scrubVideo(p); updateScenes(p); updateNav(p); updateBelowFold(p); updateScrollHint(p);
+      if (EASED && Math.abs(targetTime - lerpTime) > 0.005) raf = requestAnimationFrame(tick);
+    }
+
+    function scrubVideo(p) {
+      if (SCRUB_MODE === 'ambient') return;
+      if (video.readyState < 2 || !video.duration) return;
+      var vp = Math.min(p / VIDEO_RATIO, 1);
+      targetTime = vp * video.duration;
+      if (EASED) { lerpTime += (targetTime - lerpTime) * 0.10; try { video.currentTime = lerpTime; } catch(e){} }
+      else { try { video.currentTime = targetTime; } catch(e){} }
+    }
+
+    function updateScenes(p) {
+      var scenes = cfg.scenes || [];
+      for (var i = 0; i < scenes.length; i++) renderScene(scenes[i], p);
+    }
+
+    function renderScene(scene, p) {
+      var el = document.getElementById(scene.id);
+      if (!el) return;
+      var opacity = 0;
+      if (p >= scene.start && p <= scene.end) {
+        var fi = (p - scene.start) / FADE_RANGE;
+        var fo = (scene.end - p) / FADE_RANGE;
+        opacity = clamp(Math.min(fi, fo), 0, 1);
+      }
+      el.style.opacity    = opacity;
+      el.style.visibility = opacity > 0 ? 'visible' : 'hidden';
+      if (opacity > 0) {
+        var ch = el.querySelectorAll('[data-stagger]');
+        for (var j = 0; j < ch.length; j++) {
+          var idx = parseInt(ch[j].getAttribute('data-stagger'), 10) || 0;
+          var offset = idx * STAGGER_LAG * FADE_RANGE;
+          ch[j].style.opacity = clamp((p - scene.start - offset) / FADE_RANGE, 0, 1);
+        }
+      }
+    }
+
+    function updateNav(p) {
+      var nav = document.getElementById('v3-nav');
+      if (!nav) return;
+      var t = (cfg.nav && cfg.nav.showAfter !== undefined) ? cfg.nav.showAfter : 0.04;
+      if (p > t) { nav.classList.add('nav-visible'); }
+      else { nav.classList.remove('nav-visible'); }
+    }
+
+    function updateBelowFold(p) {
+      var el = document.getElementById('v3-below-fold');
+      if (!el) return;
+      var rs = VIDEO_RATIO + 0.02;
+      el.style.opacity = clamp((p - rs) / 0.04, 0, 1);
+    }
+
+    function updateScrollHint(p) {
+      var h = document.getElementById('scroll-hint');
+      if (h && p > 0.02) h.classList.add('hidden');
+    }
+
+    function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+  </script>
+  <!-- ENGINE END -->
+
+  <!-- Micro-interactions & Reveal -->
+  <script>
+  (function() {
+
+    /* ── Custom Cursor ────────────────────────────────── */
+    var cursor = document.getElementById('cursor');
+    var mx = -100, my = -100;
+    document.addEventListener('mousemove', function(e) {
+      mx = e.clientX; my = e.clientY;
+      cursor.style.left = mx + 'px';
+      cursor.style.top  = my + 'px';
+    });
+    document.addEventListener('mousedown', function() { cursor.classList.add('clicking'); });
+    document.addEventListener('mouseup',   function() { cursor.classList.remove('clicking'); });
+
+    /* Hover: expand cursor ring on interactive elements */
+    var hoverEls = document.querySelectorAll('a, button, .build-row, .nav-link, .nav-order, .cta-main-btn, .v3-cta-btn, .nav-logo');
+    hoverEls.forEach(function(el) {
+      el.addEventListener('mouseenter', function() { cursor.classList.add('hovering'); });
+      el.addEventListener('mouseleave', function() { cursor.classList.remove('hovering'); });
+    });
+
+    /* ── Scroll Progress Bar ──────────────────────────── */
+    var bar = document.getElementById('scroll-progress');
+    window.addEventListener('scroll', function() {
+      var p = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+      bar.style.width = (p * 100) + '%';
+    }, { passive: true });
+
+    /* ── Scroll Reveal (below fold) ──────────────────── */
+    var revealEls = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15 });
+      revealEls.forEach(function(el) { io.observe(el); });
+    } else {
+      revealEls.forEach(function(el) { el.classList.add('in-view'); });
+    }
+
+  })();
+  </script>
+
+</body>
+</html>

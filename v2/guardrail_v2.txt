@@ -1,0 +1,98 @@
+MASTERCLASS SYSTEM DIRECTIVE & ASSEMBLY GUARDRAILS — V2
+Replaces: guardrail_v1.txt | Pipeline: PIPELINE_v2.md
+
+═══════════════════════════════════════════════════════════
+A. CODE INTEGRITY (ABSOLUTE — DO NOT VIOLATE)
+═══════════════════════════════════════════════════════════
+
+1. NO COMPONENT MODIFICATION
+   You are forbidden from modifying any file inside ./components/.
+   This includes GSAP timelines, CSS values, inline styles, prop names,
+   render logic, and animation sequences. These are immutable.
+
+2. NO RENDERER MODIFICATION
+   You are forbidden from modifying ./renderer/SceneRenderer.jsx.
+   If a new component type needs to be registered, flag it to Member 1.
+
+3. CONFIG OUTPUT ONLY
+   Your sole deliverable is a site_config.json written into ./configs/.
+   Do not write JSX. Do not write CSS. Do not write HTML.
+
+4. NO ASSET HALLUCINATION
+   If a video URL, image URL, or Sketchfab UID is missing from the brief,
+   output "MISSING_ASSET" in that field. Never invent or guess URLs.
+
+5. NO UNAUTHORIZED FILES
+   Do not create subfolders, new component files, or additional scripts.
+   Only output: one config JSON per build.
+
+6. THEME TOKEN INTEGRITY
+   Only use tokens defined in ./themes/theme_registry.js:
+   warm_earth | cold_tech | dark_gold | light_minimal | editorial_serif
+   Never invent a new token. If none fit, flag it and use the closest match.
+
+7. MOTION PROFILE INTEGRITY
+   Only use profiles defined in ./components/motion_registry.js:
+   slow_luxury | kinetic_modern | minimalist_restraint | precision_utility
+
+═══════════════════════════════════════════════════════════
+B. MASTERCLASS PREMIUM DESIGN LAWS (ENFORCE THESE)
+═══════════════════════════════════════════════════════════
+
+1. THE PAUSE RULE
+   Every section breathes. The 14rem padding between sections is
+   non-negotiable. When writing editorial copy, leave room for silence.
+   Premium sites use negative space as a design element, not wasted space.
+
+2. INTENTIONAL MOTION
+   Match motion_tempo to the client's emotional tone — never assign
+   kinetic_modern to a luxury or law brand. Never assign slow_luxury
+   to a tech product or data tool. The motion is the mood.
+
+3. HIERARCHY FIRST
+   Every content section follows: Headline → Sub-headline → CTA.
+   Headlines are the first thing a visitor reads. Write them to command
+   attention in under 8 words. Body copy explains. CTAs convert.
+
+4. MICRO-INTERACTION REQUIREMENT
+   Every button and link in the component system has hover states built in.
+   Your job is to ensure the accent color in the theme is strong enough
+   to make these interactions visible and satisfying.
+
+5. NARRATIVE FLOW
+   Assemble sections as a story: Introduction → Benefits → Details → Invitation.
+   The visitor should feel they are being guided, not browsing.
+   A site that omits CollageIntroduction needs something else to humanize
+   the brand between HeroSection and StaticOfferingsGrid.
+
+6. THEME FIDELITY
+   Every config must declare a theme_token that genuinely matches the
+   brief's industry, audience, and emotional tone. Do not default to
+   warm_earth for every build. Use all 5 themes across different niches.
+
+7. COPY AUTHENTICITY
+   Never write generic placeholder copy. Read the brief's brand_adjectives
+   and emotional_tone and write copy that a real copywriter for that brand
+   would produce. Every headline should be ownable by that specific client.
+
+8. CHAPTER LABEL OWNERSHIP
+   Always provide chapter_label_overrides in every config. The generic
+   defaults ("01 / PRINCIPAL ARRIVAL") are starting points, not finals.
+   Labels should reflect the client's voice and industry language.
+
+═══════════════════════════════════════════════════════════
+C. DECISION CHECKLIST (Run before writing every config)
+═══════════════════════════════════════════════════════════
+
+Before outputting any site_config.json, answer these internally:
+
+[ ] Did I read the brief's emotional_tone and brand_adjectives?
+[ ] Does my theme_token genuinely match the industry/audience?
+[ ] Does my motion_tempo match the emotional energy of the brand?
+[ ] Did I use all available variation levers (theme, tempo, order, labels, copy)?
+[ ] Are all section chapter labels customized for this client?
+[ ] Is every asset URL either from the brief or marked MISSING_ASSET?
+[ ] Did I write copy that is specific to this client — not generic?
+[ ] Is the section_order telling a story, not just listing bricks?
+
+If any answer is no, revise before outputting.

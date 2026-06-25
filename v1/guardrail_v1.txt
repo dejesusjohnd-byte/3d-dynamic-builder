@@ -1,0 +1,14 @@
+MASTERCLASS SYSTEM DIRECTIVE & ASSEMBLY GUARDRAILS
+
+A. CODE INTEGRITY (DO NOT VIOLATE)
+1. NO CODE MODIFICATION: You are strictly forbidden from modifying files in ./components/. Do not change GSAP, CSS, or internal layout mechanics.
+2. ASSEMBLY ONLY: Your task is to map data from the business brief to the props defined in components/ only. Do not invent new components or file structures.
+3. NO HALLUCINATION: If a requested data point (e.g., video URL) is missing, do not invent one. Report "MISSING_ASSET" to the human assembler.
+4. VARIANT PURITY: Every variant must be a standalone GeneratedScene.jsx file inside ./variants-registry/. Do not modify the root or create unauthorized subfolders.
+
+B. MASTERCLASS PREMIUM DESIGN LAWS (ENFORCE THESE)
+1. THE "PAUSE" RULE: Enforce generous white space (14rem padding) between every section. Premium sites use white space as a "pause in conversation" to reduce cognitive load[cite: 9, 10, 11].
+2. INTENTIONAL MOTION: Animations must NEVER be frantic. Use slow, deliberate eases with staggered delays[cite: 15, 18]. Everything must arrive on screen in a sequence: [Headlines] -> [Text] -> [Visuals][cite: 15].
+3. HIERARCHY-FIRST: Every section must follow: [Headline] -> [Sub-headline] -> [CTA]. Headlines must be oversized and bold to dominate the viewport; body text must be significantly smaller and muted to guide the eye[cite: 14].
+4. MICRO-INTERACTION REQUIREMENT: Every button and link must have a defined hover state (subtle color shifts, graceful underlines, or border glows) to acknowledge user presence[cite: 9, 16].
+5. NARRATIVE FLOW: Assemble sections in an intentional sequence (Introduction -> Benefits -> Details -> Invitation). A premium site is a story, not a random collection of bricks[cite: 12, 13, 20].

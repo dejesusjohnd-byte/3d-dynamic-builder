@@ -1,0 +1,51 @@
+{
+  "_instructions": "Fill out this brief for each new client. Hand the completed file to Claude. Claude will write the site_config.json into /configs/. Do not leave any field blank — use null if not applicable.",
+
+  "client_name": "",
+  "industry": "",
+  "audience": "",
+  "emotional_tone": "",
+  "brand_adjectives": [],
+
+  "theme_token": "warm_earth",
+  "_theme_options": ["warm_earth", "cold_tech", "dark_gold", "light_minimal", "editorial_serif"],
+
+  "motion_tempo": "slow_luxury",
+  "_motion_options": ["slow_luxury", "kinetic_modern", "minimalist_restraint", "precision_utility"],
+
+  "section_order": [
+    "Navigation",
+    "HeroSection",
+    "CollageIntroduction",
+    "StaticOfferingsGrid",
+    "TextEditorial",
+    "TwoColumnValuePause",
+    "ClosingCallToAction"
+  ],
+  "_section_notes": "Reorder or remove sections as needed. StaticOfferingsGrid can appear twice for data-heavy sites.",
+
+  "omit_sections": [],
+
+  "has_3d_asset": false,
+  "sketchfab_uid": null,
+  "has_product_video": false,
+
+  "assets": {
+    "hero_video_url": null,
+    "hero_image_url": null,
+    "collage_images": [null, null, null, null],
+    "offerings": [
+      { "title": "", "summary": "", "cover_url": null },
+      { "title": "", "summary": "", "cover_url": null },
+      { "title": "", "summary": "", "cover_url": null }
+    ],
+    "value_pause_visual_url": null
+  },
+
+  "copy_direction": {
+    "headline_style": "",
+    "_headline_examples": "bold declarative | question-based | single evocative word | poetic",
+    "cta_energy": "",
+    "_cta_examples": "urgent | inviting | professional | mysterious"
+  }
+}

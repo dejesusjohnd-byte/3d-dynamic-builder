@@ -1,0 +1,49 @@
+{
+  "client_name": "Quinn Global Tax Law",
+  "industry": "International Tax & Legal Advisory",
+  "audience": "High-net-worth individuals, multinational corporations, family offices",
+  "emotional_tone": "Authoritative, protective, globally sophisticated",
+  "brand_adjectives": ["precise", "global", "protective", "trustworthy", "premium"],
+
+  "theme_token": "warm_earth",
+
+  "motion_tempo": "slow_luxury",
+
+  "section_order": [
+    "Navigation",
+    "HeroSection",
+    "CollageIntroduction",
+    "StaticOfferingsGrid",
+    "TextEditorial",
+    "TwoColumnValuePause",
+    "ClosingCallToAction"
+  ],
+
+  "omit_sections": [],
+
+  "has_3d_asset": false,
+  "sketchfab_uid": null,
+  "has_product_video": false,
+
+  "assets": {
+    "hero_video_url": null,
+    "hero_image_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920",
+    "collage_images": [
+      "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800",
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800",
+      "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800",
+      "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800"
+    ],
+    "offerings": [
+      { "title": "International Tax Strategy", "summary": "Cross-border structuring for multinational entities.", "cover_url": "https://images.unsplash.com/photo-1554469384-e58fac16e23a?w=800" },
+      { "title": "Wealth Preservation", "summary": "Long-term asset protection across jurisdictions.", "cover_url": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800" },
+      { "title": "Legal Advisory", "summary": "Airtight counsel for complex regulatory environments.", "cover_url": "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800" }
+    ],
+    "value_pause_visual_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200"
+  },
+
+  "copy_direction": {
+    "headline_style": "bold declarative — commands respect, signals authority",
+    "cta_energy": "professional and inviting — not pushy"
+  }
+}

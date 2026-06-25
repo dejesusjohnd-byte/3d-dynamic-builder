@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus — AI Infrastructure (v1)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --color-bg:           #060C1A;
+      --color-surface:      #0A1628;
+      --color-surface-2:    #0F1E38;
+      --color-text:         #D8E8F4;
+      --color-muted:        #3A5070;
+      --color-accent:       #22C9E8;
+      --color-accent-hover: #55DFF5;
+      --color-accent-dim:   rgba(34,201,232,0.12);
+      --font-display:       'Space Mono', monospace;
+      --font-body:          'Space Grotesk', system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      cursor: none;
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    #cursor {
+      position: fixed; width: 8px; height: 8px;
+      background: var(--color-accent); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width 0.2s, height 0.2s, background 0.2s;
+      mix-blend-mode: screen;
+    }
+    #cursor.expand { width: 32px; height: 32px; background: transparent; border: 1px solid var(--color-accent); }
+
+    #scroll-progress {
+      position: fixed; top: 0; left: 0; height: 1px; width: 0%;
+      background: var(--color-accent); z-index: 200; pointer-events: none;
+    }
+
+    /* SCROLL CONTAINER — 600vh, 3 scenes, single video */
+    #v3-scroll-container { height: 600vh; position: relative; }
+    #v3-video-wrapper {
+      position: sticky; top: 0; height: 100vh; width: 100%;
+      overflow: hidden; background: var(--color-bg);
+    }
+    #v3-video {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .grain {
+      position: absolute; inset: 0; opacity: 0.035; pointer-events: none; z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    }
+
+    .v3-scene { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; z-index: 2; }
+    [data-stagger] { position: absolute; opacity: 0; pointer-events: none; line-height: 1.05; }
+
+    .v3-headline {
+      font-family: var(--font-display); font-weight: 700; color: var(--color-text);
+      letter-spacing: -0.01em; text-shadow: 0 2px 60px rgba(0,0,0,0.9);
+    }
+    .v3-subhead {
+      font-family: var(--font-body); font-weight: 300; color: var(--color-text);
+      letter-spacing: 0.01em; text-shadow: 0 1px 20px rgba(0,0,0,0.9); max-width: 38ch;
+    }
+    .v3-pitch {
+      font-family: var(--font-display); font-weight: 400; font-size: 0.6rem;
+      color: var(--color-accent); letter-spacing: 0.2em; text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(34,201,232,0.4);
+    }
+
+    /* Scene 1 — standard corner positions (this is the "formula" we're moving away from) */
+    #scene-exterior .v3-headline { font-size: clamp(3rem, 6vw, 6rem); top: 8%; left: 6%; }
+    #scene-exterior .v3-subhead  { font-size: clamp(0.85rem, 1.1vw, 1.05rem); top: calc(8% + clamp(3rem, 6vw, 6rem) + 1.4rem); left: 6%; }
+    #scene-exterior .v3-pitch    { bottom: 6%; right: 6%; }
+
+    #scene-approach .v3-headline { font-size: clamp(2.5rem, 5vw, 5rem); top: 10%; right: 6%; text-align: right; }
+    #scene-approach .v3-subhead  { font-size: clamp(0.85rem, 1vw, 1rem); bottom: 14%; left: 6%; }
+    #scene-approach .v3-pitch    { bottom: 6%; left: 6%; }
+
+    #scene-gate .v3-headline { font-size: clamp(2.2rem, 4.5vw, 4.5rem); bottom: 20%; left: 6%; }
+    #scene-gate .v3-subhead  { font-size: clamp(0.8rem, 0.95vw, 0.95rem); top: 10%; right: 6%; text-align: right; max-width: 28ch; }
+    #scene-gate .v3-pitch    { bottom: 6%; right: 6%; }
+
+    /* Nav */
+    #v3-nav {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.5rem 2.5rem;
+      transition: background 0.6s ease, backdrop-filter 0.6s ease;
+    }
+    #v3-nav.scrolled { background: rgba(6,12,26,0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+    .nav-logo { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; color: var(--color-text); letter-spacing: 0.12em; cursor: none; }
+    .nav-logo span { color: var(--color-accent); }
+    .nav-links { display: flex; align-items: center; gap: 2.5rem; }
+    .nav-link { font-family: var(--font-body); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-muted); cursor: none; transition: color 0.3s; }
+    .nav-link:hover { color: var(--color-text); }
+    .nav-enter { font-family: var(--font-display); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent); border: 1px solid rgba(34,201,232,0.4); padding: 0.55rem 1.2rem; cursor: none; transition: background 0.3s, border-color 0.3s; }
+    .nav-enter:hover { background: var(--color-accent-dim); border-color: var(--color-accent); }
+
+    .scroll-hint { position: absolute; bottom: 4%; left: 6%; display: flex; align-items: center; gap: 1rem; pointer-events: none; z-index: 10; transition: opacity 0.8s; }
+    .scroll-hint.hidden { opacity: 0; }
+    .scroll-hint-line { width: 40px; height: 1px; background: var(--color-muted); animation: linePulse 2s ease-in-out infinite; }
+    .scroll-hint-text { font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--color-muted); }
+    @keyframes linePulse { 0%,100% { transform: scaleX(0.4); transform-origin: left; opacity: 0.3; } 50% { transform: scaleX(1); transform-origin: left; opacity: 1; } }
+
+    /* Below fold */
+    #v3-below-fold { opacity: 0; background: var(--color-bg); }
+
+    .section-services { padding: 8rem 0 0; border-top: 1px solid rgba(34,201,232,0.08); }
+    .services-header { display: flex; align-items: baseline; justify-content: space-between; padding: 0 6% 3rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .services-title { font-family: var(--font-display); font-size: clamp(0.7rem, 1vw, 0.85rem); font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-accent); }
+    .services-sub { font-family: var(--font-body); font-size: 0.7rem; color: var(--color-muted); letter-spacing: 0.08em; }
+    .services-grid { display: grid; grid-template-columns: 55% 45%; }
+    .service-featured { padding: 4rem 6%; border-right: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; flex-direction: column; gap: 2rem; cursor: none; position: relative; overflow: hidden; transition: background 0.5s; }
+    .service-featured::before { content: ''; position: absolute; inset: 0; background: var(--color-accent-dim); opacity: 0; transition: opacity 0.5s; }
+    .service-featured:hover::before { opacity: 1; }
+    .service-featured > * { position: relative; z-index: 1; }
+    .service-num { font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 0.2em; color: var(--color-accent); }
+    .service-name { font-family: var(--font-display); font-size: clamp(2rem, 3.5vw, 3.2rem); font-weight: 700; letter-spacing: -0.01em; color: var(--color-text); line-height: 1.1; }
+    .service-desc { font-family: var(--font-body); font-size: 0.95rem; font-weight: 300; line-height: 1.75; color: var(--color-muted); max-width: 36ch; }
+    .service-link { font-family: var(--font-display); font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-accent); display: flex; align-items: center; gap: 0.8rem; margin-top: auto; cursor: none; }
+    .service-link::after { content: ''; display: block; width: 24px; height: 1px; background: var(--color-accent); transition: width 0.4s; }
+    .service-featured:hover .service-link::after { width: 48px; }
+    .services-stack { display: flex; flex-direction: column; }
+    .service-row { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 1.5rem; padding: 2.5rem 6% 2.5rem 4%; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: none; transition: background 0.4s; position: relative; overflow: hidden; }
+    .service-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--color-accent); transform: scaleY(0); transform-origin: top; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .service-row:hover { background: var(--color-surface); }
+    .service-row:hover::before { transform: scaleY(1); }
+    .row-num { font-family: var(--font-display); font-size: 0.6rem; color: var(--color-muted); padding-top: 0.35rem; letter-spacing: 0.1em; }
+    .row-name { font-family: var(--font-display); font-size: clamp(1.1rem, 1.8vw, 1.5rem); font-weight: 700; color: var(--color-text); letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+    .row-desc { font-family: var(--font-body); font-size: 0.8rem; font-weight: 300; color: var(--color-muted); line-height: 1.6; max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s; }
+    .service-row:hover .row-desc { max-height: 4rem; opacity: 1; }
+    .row-arrow { font-family: var(--font-display); font-size: 0.75rem; color: var(--color-muted); padding-top: 0.3rem; transition: color 0.3s, transform 0.3s; }
+    .service-row:hover .row-arrow { color: var(--color-accent); transform: translateX(4px); }
+
+    .section-story { padding: 9rem 0 8rem; border-top: 1px solid rgba(255,255,255,0.04); display: grid; grid-template-columns: 80px 1fr; overflow: hidden; }
+    .story-label-col { display: flex; align-items: center; justify-content: center; border-right: 1px solid rgba(255,255,255,0.04); padding: 0 1.5rem; }
+    .story-vertical-label { font-family: var(--font-display); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: var(--color-muted); writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+    .story-content { padding: 0 6% 0 5%; display: grid; grid-template-columns: 1fr 42%; gap: 6rem; align-items: start; }
+    .story-left { padding-top: 1rem; }
+    .story-eyebrow { font-family: var(--font-display); font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--color-accent); margin-bottom: 2rem; }
+    .story-headline { font-family: var(--font-display); font-size: clamp(2rem, 4vw, 4rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; color: var(--color-text); }
+    .story-headline em { font-style: italic; color: var(--color-accent); }
+    .story-right { padding-top: 4rem; }
+    .story-body { font-family: var(--font-body); font-size: 0.95rem; font-weight: 300; line-height: 1.85; color: var(--color-muted); margin-bottom: 2.5rem; }
+
+    .section-proof { padding: 6rem 6%; border-top: 1px solid rgba(255,255,255,0.04); }
+    .proof-terminal-bar { font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.18em; color: var(--color-muted); margin-bottom: 3rem; display: flex; align-items: center; gap: 1rem; }
+    .proof-terminal-bar::before { content: '▶'; color: var(--color-accent); font-size: 0.5rem; }
+    .proof-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,0.04); margin-bottom: 2rem; }
+    .proof-cell { background: var(--color-bg); padding: 2.5rem 2rem; }
+    .proof-label { font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-muted); margin-bottom: 1rem; }
+    .proof-value { font-family: var(--font-display); font-size: clamp(2.2rem, 4vw, 3.8rem); font-weight: 700; color: var(--color-text); letter-spacing: -0.02em; line-height: 1; }
+    .proof-cell:first-child .proof-value { color: var(--color-accent); }
+    .proof-cell:last-child .proof-value { font-size: clamp(1.8rem, 3vw, 2.8rem); }
+    .proof-status { font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.18em; color: var(--color-muted); display: flex; align-items: center; gap: 0.8rem; }
+    .proof-status::before { content: ''; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 8px var(--color-accent); animation: blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Mood break — Video 2 as ambient in this version */
+    .section-mood { position: relative; height: 70vh; display: flex; align-items: center; justify-content: center; overflow: hidden; border-top: 1px solid rgba(255,255,255,0.04); }
+    .mood-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.22; }
+    .mood-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, var(--color-bg) 0%, transparent 20%, transparent 80%, var(--color-bg) 100%); }
+    .mood-line { position: relative; z-index: 2; font-family: var(--font-display); font-size: clamp(1rem, 2.5vw, 2rem); font-weight: 400; letter-spacing: 0.08em; color: var(--color-text); text-align: center; text-shadow: 0 0 60px rgba(34,201,232,0.2); }
+    .mood-line em { font-style: normal; color: var(--color-accent); }
+
+    .section-cta { padding: 0; border-top: 1px solid rgba(34,201,232,0.08); position: relative; overflow: hidden; display: grid; grid-template-rows: 1fr auto; }
+    .cta-main { padding: 8rem 6% 4rem; display: grid; grid-template-columns: 1fr 36%; align-items: end; gap: 4rem; }
+    .cta-headline { font-family: var(--font-display); font-size: clamp(4.5rem, 10vw, 10rem); font-weight: 700; line-height: 0.95; letter-spacing: -0.025em; color: var(--color-text); }
+    .cta-headline .dim { color: var(--color-surface-2); -webkit-text-stroke: 1px rgba(34,201,232,0.2); }
+    .cta-right { padding-bottom: 0.5rem; display: flex; flex-direction: column; align-items: flex-start; gap: 2rem; }
+    .cta-sub { font-family: var(--font-body); font-size: 0.9rem; font-weight: 300; line-height: 1.75; color: var(--color-muted); max-width: 26ch; }
+    .cta-btn { display: inline-block; font-family: var(--font-display); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-bg); background: var(--color-accent); padding: 1rem 2.5rem; cursor: none; position: relative; overflow: hidden; }
+    .cta-btn::before { content: ''; position: absolute; inset: 0; background: var(--color-accent-hover); transform: scaleX(0); transform-origin: left; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .cta-btn:hover::before { transform: scaleX(1); }
+    .cta-btn span { position: relative; z-index: 1; }
+    .cta-scanline { height: 1px; background: linear-gradient(to right, transparent, var(--color-accent), transparent); opacity: 0.3; margin: 0 6%; }
+
+    .section-footer { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 2rem 6%; border-top: 1px solid rgba(255,255,255,0.04); gap: 2rem; }
+    .footer-brand { font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; color: var(--color-muted); letter-spacing: 0.12em; }
+    .footer-status { font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.14em; color: var(--color-muted); opacity: 0.5; text-align: center; }
+    .footer-right { text-align: right; font-family: var(--font-display); font-size: 0.55rem; letter-spacing: 0.12em; color: var(--color-muted); opacity: 0.4; }
+
+    .reveal { opacity: 0; transform: translateY(1.5rem); transition: opacity 1.4s cubic-bezier(0.16,1,0.3,1), transform 1.4s cubic-bezier(0.16,1,0.3,1); }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.12s; }
+    .reveal-d2 { transition-delay: 0.26s; }
+    .reveal-d3 { transition-delay: 0.42s; }
+
+    @media (max-width: 768px) {
+      body { cursor: auto; }
+      #cursor { display: none; }
+      .services-grid { grid-template-columns: 1fr; }
+      .section-story { grid-template-columns: 1fr; }
+      .story-label-col { display: none; }
+      .story-content { grid-template-columns: 1fr; gap: 3rem; }
+      .proof-grid { grid-template-columns: repeat(2,1fr); }
+      .cta-main { grid-template-columns: 1fr; }
+      .section-footer { grid-template-columns: 1fr; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="cursor"></div>
+  <div id="scroll-progress"></div>
+
+  <!-- V1: 600vh, single video, 3 scenes, standard corner-rotation text positions -->
+  <div id="v3-scroll-container">
+    <div id="v3-video-wrapper">
+
+      <video id="v3-video" muted playsinline preload="auto">
+        <source src="AICity_Video1.mp4" type="video/mp4">
+      </video>
+      <div class="grain" aria-hidden="true"></div>
+
+      <div class="v3-scene" id="scene-exterior">
+        <p class="v3-headline" data-stagger="0">The City<br>Thinks.</p>
+        <p class="v3-subhead"  data-stagger="1">A new kind of intelligence<br>lives here.</p>
+        <p class="v3-pitch"    data-stagger="2">Nexus — AI Infrastructure</p>
+      </div>
+
+      <div class="v3-scene" id="scene-approach">
+        <p class="v3-headline" data-stagger="0">Built<br>at Scale.</p>
+        <p class="v3-subhead"  data-stagger="1">Systems that operate<br>beyond human speed.</p>
+        <p class="v3-pitch"    data-stagger="2">Processing. Always.</p>
+      </div>
+
+      <div class="v3-scene" id="scene-gate">
+        <p class="v3-headline" data-stagger="0">Enter<br>the Core.</p>
+        <p class="v3-subhead"  data-stagger="1">What happens inside<br>changes everything outside.</p>
+        <p class="v3-pitch"    data-stagger="2">Nexus Core — Active</p>
+      </div>
+
+      <nav id="v3-nav">
+        <a class="nav-logo" href="#">NEX<span>_</span>US</a>
+        <div class="nav-links">
+          <a class="nav-link" href="#services">Services</a>
+          <a class="nav-link" href="#story">About</a>
+          <a class="nav-enter" href="#cta">Enter Core</a>
+        </div>
+      </nav>
+      <div class="scroll-hint" id="scroll-hint">
+        <div class="scroll-hint-line"></div>
+        <span class="scroll-hint-text">Scroll to enter</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="v3-below-fold">
+    <section class="section-services" id="services">
+      <div class="services-header">
+        <span class="services-title reveal">What Nexus Does</span>
+        <span class="services-sub reveal">04 Core Systems</span>
+      </div>
+      <div class="services-grid">
+        <div class="service-featured reveal">
+          <div class="service-num">01 — Featured</div>
+          <div class="service-name">Infra<br>structure</div>
+          <p class="service-desc">The backbone of systems that never sleep. Distributed AI architecture built for planetary scale.</p>
+          <a class="service-link" href="#cta">Explore</a>
+        </div>
+        <div class="services-stack">
+          <div class="service-row reveal reveal-d1">
+            <div class="row-num">02</div>
+            <div class="row-content"><div class="row-name">Integration</div><div class="row-desc">Connect anything to everything. 140+ enterprise integrations, deployed in hours.</div></div>
+            <div class="row-arrow">→</div>
+          </div>
+          <div class="service-row reveal reveal-d2">
+            <div class="row-num">03</div>
+            <div class="row-content"><div class="row-name">Intelligence</div><div class="row-desc">Decision systems that learn from every interaction. Continuously improving.</div></div>
+            <div class="row-arrow">→</div>
+          </div>
+          <div class="service-row reveal reveal-d3">
+            <div class="row-num">04</div>
+            <div class="row-content"><div class="row-name">Interface</div><div class="row-desc">APIs, dashboards, SDKs built for how developers actually work.</div></div>
+            <div class="row-arrow">→</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-story" id="story">
+      <div class="story-label-col"><span class="story-vertical-label">Nexus Systems</span></div>
+      <div class="story-content">
+        <div class="story-left">
+          <p class="story-eyebrow reveal">Who We Are</p>
+          <h2 class="story-headline reveal reveal-d1">The system<br>that powers<br>the <em>systems.</em></h2>
+        </div>
+        <div class="story-right">
+          <p class="story-body reveal reveal-d2">Nexus was not built to be seen. It was built to work — invisibly, continuously, at a scale that makes other infrastructure feel like scaffolding.</p>
+          <p class="story-body reveal reveal-d3">Every system you rely on relies on something. Nexus is that something.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-proof">
+      <div class="proof-terminal-bar reveal">sys.nexus --status --verbose</div>
+      <div class="proof-grid">
+        <div class="proof-cell"><div class="proof-label">Uptime</div><div class="proof-value" data-count="99.98" data-suffix="%" data-decimal="true">99.98%</div></div>
+        <div class="proof-cell"><div class="proof-label">Response</div><div class="proof-value">0.3<span style="font-size:0.4em;letter-spacing:0.1em;">ms</span></div></div>
+        <div class="proof-cell"><div class="proof-label">Integrations</div><div class="proof-value" data-count="140" data-suffix="+">140+</div></div>
+        <div class="proof-cell"><div class="proof-label">Industries</div><div class="proof-value" data-count="12">12</div></div>
+      </div>
+      <div class="proof-status reveal">SYSTEM STATUS: ALL NODES OPERATIONAL</div>
+    </section>
+
+    <!-- V1 uses Video 2 as ambient mood section -->
+    <section class="section-mood">
+      <video class="mood-video" autoplay muted loop playsinline>
+        <source src="AICity_Video2.mp4" type="video/mp4">
+      </video>
+      <div class="mood-overlay"></div>
+      <p class="mood-line">The core is <em>always</em> on.</p>
+    </section>
+
+    <section class="section-cta" id="cta">
+      <div class="cta-main">
+        <div class="cta-left"><h2 class="cta-headline reveal"><span class="dim">ENTER</span><br>THE<br>CORE.</h2></div>
+        <div class="cta-right">
+          <p class="cta-sub reveal reveal-d1">Explore what Nexus can do for systems that can't afford to stop.</p>
+          <a class="cta-btn reveal reveal-d2" href="#services"><span>Explore Services →</span></a>
+        </div>
+      </div>
+      <div class="cta-scanline"></div>
+    </section>
+
+    <footer class="section-footer">
+      <span class="footer-brand">NEXUS</span>
+      <span class="footer-status">© ALL SYSTEMS OPERATIONAL</span>
+      <span class="footer-right">v1.0.0 — STABLE</span>
+    </footer>
+  </div>
+
+  <script>
+  window.V3_CONFIG = {
+    scrubMode: 'full', videoRatio: 0.65, fadeRange: 0.022, staggerLag: 0.55,
+    nav: { showAfter: 0 },
+    scenes: [
+      { id: 'scene-exterior', start: 0.00, end: 0.22 },
+      { id: 'scene-approach', start: 0.22, end: 0.43 },
+      { id: 'scene-gate',     start: 0.43, end: 0.65 }
+    ]
+  };
+  </script>
+
+  <!-- ENGINE START -->
+  <script>
+  (function V3Engine() {
+    'use strict';
+    var cfg = window.V3_CONFIG || {}, VIDEO_RATIO = cfg.videoRatio||0.65, FADE_RANGE = cfg.fadeRange||0.025, STAGGER_LAG = cfg.staggerLag||0.55;
+    var video, heroMaxScroll, totalMaxScroll, raf;
+    function init() {
+      video = document.getElementById('v3-video');
+      if (!video) return;
+      video.muted = true; video.playsInline = true; video.preload = 'auto'; video.load();
+      video.addEventListener('loadedmetadata', function() {
+        video.play().then(function() { video.pause(); try { video.currentTime = 0.001; } catch(e){} }).catch(function() { try { video.currentTime = 0.001; } catch(e){} });
+      }, { once: true });
+      measure(); onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', measure);
+    }
+    function measure() {
+      var c = document.getElementById('v3-scroll-container');
+      heroMaxScroll  = c ? Math.max(c.offsetHeight - window.innerHeight, 1) : window.innerHeight * 5;
+      totalMaxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+    }
+    function onScroll() { if (!raf) raf = requestAnimationFrame(tick); }
+    function tick() {
+      raf = null;
+      var p = Math.min(window.scrollY / heroMaxScroll, 1.05);
+      if (video && video.readyState >= 2 && video.duration) { try { video.currentTime = Math.min(p / VIDEO_RATIO, 1) * video.duration; } catch(e){} }
+      (cfg.scenes||[]).forEach(function(s) {
+        var el = document.getElementById(s.id); if (!el) return;
+        var op = (p >= s.start && p <= s.end) ? clamp(Math.min((p - s.start)/FADE_RANGE, (s.end - p)/FADE_RANGE), 0, 1) : 0;
+        el.style.opacity = op; el.style.visibility = op > 0 ? 'visible' : 'hidden';
+        if (op > 0) el.querySelectorAll('[data-stagger]').forEach(function(ch) {
+          var idx = parseInt(ch.getAttribute('data-stagger'),10)||0;
+          ch.style.opacity = clamp((p - s.start - idx * STAGGER_LAG * FADE_RANGE) / FADE_RANGE, 0, 1);
+        });
+      });
+      var nav = document.getElementById('v3-nav');
+      if (nav) { nav.style.opacity = '1'; nav.style.pointerEvents = 'all'; if (p > 0.05) nav.classList.add('scrolled'); else nav.classList.remove('scrolled'); }
+      var bf = document.getElementById('v3-below-fold');
+      if (bf) bf.style.opacity = clamp((p - (VIDEO_RATIO + 0.02)) / 0.04, 0, 1);
+      var sh = document.getElementById('scroll-hint');
+      if (sh && p > 0.03) sh.classList.add('hidden');
+      var bar = document.getElementById('scroll-progress');
+      if (bar) bar.style.width = (Math.min(window.scrollY / totalMaxScroll, 1) * 100) + '%';
+    }
+    function clamp(v,a,b) { return v<a?a:v>b?b:v; }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  })();
+  </script>
+  <!-- ENGINE END -->
+
+  <script>
+  (function() {
+    var cur = document.getElementById('cursor');
+    document.addEventListener('mousemove', function(e) { cur.style.left = e.clientX+'px'; cur.style.top = e.clientY+'px'; });
+    document.querySelectorAll('a, button, .service-featured, .service-row').forEach(function(el) {
+      el.addEventListener('mouseenter', function() { cur.classList.add('expand'); });
+      el.addEventListener('mouseleave', function() { cur.classList.remove('expand'); });
+    });
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries) { entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); } }); }, { threshold: 0.12 });
+      document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+    } else { document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('in-view'); }); }
+    var counted = false;
+    var ps = document.querySelector('.section-proof');
+    if (ps && 'IntersectionObserver' in window) {
+      var cio = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting && !counted) {
+          counted = true;
+          document.querySelectorAll('[data-count]').forEach(function(el) {
+            var t = parseFloat(el.dataset.count), suf = el.dataset.suffix||'', dec = el.dataset.decimal==='true', t0 = performance.now(), dur = 1800;
+            function step(now) { var p = Math.min((now-t0)/dur,1), e = 1-Math.pow(1-p,3); el.textContent = (dec?(t*e).toFixed(2):Math.floor(t*e))+suf; if (p<1) requestAnimationFrame(step); }
+            requestAnimationFrame(step);
+          });
+        }
+      }, { threshold: 0.5 });
+      cio.observe(ps);
+    }
+  })();
+  </script>
+
+</body>
+</html>

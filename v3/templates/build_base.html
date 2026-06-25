@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<!--
+  V3 BUILD BASE TEMPLATE
+  ======================================================================
+  HOW TO USE THIS FILE
+  1. Copy this file into v3/builds/{build_name}/index.html
+  2. Replace every /* BUILD: ... */ comment with actual content
+  3. Copy engine/scroll-scrub.js verbatim between ENGINE START / ENGINE END
+  4. Do NOT modify anything marked DO NOT MODIFY
+  5. The only editable blocks are:
+       - <title>
+       - /* BUILD: BRAND CSS */  section in <style>
+       - window.V3_CONFIG { ... }
+       - All <!-- SCENE --> divs
+       - <nav> content
+       - #v3-below-fold content
+  ======================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- BUILD: Site title -->
+  <title>Brand Name</title>
+
+  <!-- BUILD: Google Fonts from selected typography palette (T1–T5) -->
+  <!-- Example T1: <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet"> -->
+
+  <!-- GSAP + ScrollTrigger from CDN — DO NOT MODIFY -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    /* ================================================================
+       BASE STYLES — DO NOT MODIFY
+       ================================================================ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: auto; }
+    body { background: #000; overflow-x: hidden; font-size: 16px; }
+
+    /* Scroll container — tall enough for scroll experience */
+    #v3-scroll-container {
+      position: relative;
+      /* BUILD: Set height. Rule of thumb: (number of chapters + 2) × 100vh
+         Example 8 chapters: height: 1000vh; */
+      height: 1000vh;
+    }
+
+    /* Sticky video wrapper — DO NOT MODIFY */
+    #v3-video-wrapper {
+      position: sticky;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Video element — DO NOT MODIFY */
+    #v3-video {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: cover;
+    }
+
+    /* Scene overlay base — DO NOT MODIFY */
+    .v3-scene {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    /* Video color overlay — DO NOT MODIFY */
+    .v3-overlay {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Text elements — DO NOT MODIFY STRUCTURE, only positioning via inline style */
+    .v3-headline,
+    .v3-subhead,
+    .v3-pitch {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    /* Staggered children start invisible — DO NOT MODIFY */
+    [data-stagger] { opacity: 0; }
+
+    /* Nav base — DO NOT MODIFY */
+    #v3-nav {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease;
+    }
+
+    /* Below-fold container — DO NOT MODIFY */
+    #v3-below-fold {
+      opacity: 0;
+    }
+
+    /* ================================================================
+       BUILD: BRAND CSS
+       Add all brand-specific styles below this line.
+       All colors must reference CSS custom properties from :root.
+       No hardcoded hex values in rules — only in :root.
+       ================================================================ */
+
+    :root {
+      /* BUILD: Set from PLAN_BLOCK.color_tokens */
+      --color-bg:               #0C0C0C;
+      --color-surface:          #141414;
+      --color-text:             #F0EDE8;
+      --color-muted:            #8A8580;
+      --color-accent:           #C8A060;
+      --color-accent-hover:     #DDB870;
+      --color-border:           rgba(255,255,255,0.08);
+
+      /* BUILD: Typography from selected palette (T1–T5) */
+      --font-display:           'Playfair Display', Georgia, serif;
+      --font-body:              'DM Sans', system-ui, sans-serif;
+
+      /* BUILD: Type scale from BLUEPRINT_BLOCK.typography.scale */
+      --scale-display:          6rem;
+      --scale-h1:               3.5rem;
+      --scale-h2:               2.25rem;
+      --scale-h3:               1.4rem;
+      --scale-body:             1rem;
+      --scale-small:            0.75rem;
+
+      /* BUILD: Spacing from BLUEPRINT_BLOCK.spacing */
+      --section-padding:        10rem;
+      --base-unit:              8px;
+    }
+
+    /* BUILD: Below-fold section styles */
+    #v3-below-fold {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+    }
+
+    /* BUILD: Nav styles */
+    #v3-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 3rem;
+      /* Mix-blend-mode optional — creates adaptive nav that reads over video */
+      /* mix-blend-mode: difference; */
+    }
+
+    /* BUILD: Add section-specific styles here */
+
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     SCROLL CONTAINER
+     ================================================================ -->
+<div id="v3-scroll-container">
+
+  <!-- STICKY VIDEO WRAPPER — DO NOT MODIFY STRUCTURE -->
+  <div id="v3-video-wrapper">
+
+    <!-- VIDEO — BUILD: update src filename only -->
+    <video id="v3-video" muted playsinline preload="auto">
+      <source src="../../uploads/FILENAME.mp4" type="video/mp4">
+    </video>
+
+    <!-- ============================================================
+         SCROLL SCENES
+         One .v3-scene div per chapter from CHAPTER_MAP_BLOCK.
+
+         STRUCTURE PER SCENE:
+         <div class="v3-scene" id="scene-{chapter_id}">
+           <div class="v3-overlay" style="background: rgba(0,0,0,0.XX);"></div>
+           <span class="v3-headline" style="..." data-stagger="0">HEADLINE</span>
+           <span class="v3-subhead"  style="..." data-stagger="1">Subhead</span>
+           <span class="v3-pitch"    style="..." data-stagger="2">pitch line</span>
+         </div>
+
+         TEXT POSITION RULES:
+         - Derive position from each chapter's text_safe_zone in CHAPTER_MAP_BLOCK
+         - Use: top/bottom/left/right as percentages
+         - Each scene MUST have different positions from all other scenes
+         - Headline size: 3rem–7rem (largest)
+         - Subhead size: 1rem–1.6rem (medium)
+         - Pitch size: 0.65rem–0.85rem (smallest, tracked, often small-caps)
+
+         TEXT STYLE RULES:
+         - Never use: transform, translateY, blur, kinetic effects on text
+         - Opacity is handled by the engine via data-stagger attributes
+         - Add font-family, line-height, letter-spacing inline or via class
+         ============================================================ -->
+
+    <!-- BUILD: Paste scene divs below this line -->
+
+    <!-- SCENE EXAMPLE (delete this comment block in real builds):
+    <div class="v3-scene" id="scene-city-exterior">
+      <div class="v3-overlay" style="background: rgba(10,8,20,0.30);"></div>
+      <span class="v3-headline" data-stagger="0"
+            style="font-family:var(--font-display); font-size:5rem; font-weight:700;
+                   color:var(--color-text); line-height:1.0; top:14%; left:7%; max-width:50%;">
+        The City Finds You
+      </span>
+      <span class="v3-subhead" data-stagger="1"
+            style="font-family:var(--font-body); font-size:1.05rem; font-weight:300;
+                   color:var(--color-text); top:72%; left:58%; max-width:35%;">
+        Every great cut starts with the right address.
+      </span>
+      <span class="v3-pitch" data-stagger="2"
+            style="font-family:var(--font-body); font-size:0.72rem; font-weight:400;
+                   letter-spacing:0.12em; text-transform:uppercase; color:var(--color-muted);
+                   bottom:7%; right:5%;">
+        Harlem, NY · Est. 2019
+      </span>
+    </div>
+    -->
+
+    <!-- ============================================================
+         NAV
+         BUILD: Fill nav content per brand fingerprint.
+         Position and style via CSS above.
+         Nav fades in after V3_CONFIG.nav.showAfter scroll progress.
+         ============================================================ -->
+    <nav id="v3-nav">
+      <!-- BUILD: Nav content. Example:
+      <span style="font-family:var(--font-body); font-size:0.9rem; letter-spacing:0.08em;
+                   text-transform:uppercase; color:var(--color-text);">Brand</span>
+      <div style="display:flex; gap:2.5rem;">
+        <a href="#services" style="...">Services</a>
+        <a href="#about"    style="...">About</a>
+        <a href="#contact"  style="...">Book</a>
+      </div>
+      -->
+    </nav>
+
+  </div>
+  <!-- end #v3-video-wrapper -->
+
+</div>
+<!-- end #v3-scroll-container -->
+
+
+<!-- ================================================================
+     BELOW-FOLD SECTIONS
+     Engine reveals this block at VIDEO_RATIO + 0.02 scroll progress.
+     BUILD: Add services / about / contact sections here.
+     Style everything from CSS custom properties (--color-*, --font-*).
+     Section order from BLUEPRINT_BLOCK.pages[*].sections.
+     Minimum 8rem vertical padding between sections (--section-padding).
+     ================================================================ -->
+<div id="v3-below-fold">
+
+  <!-- BUILD: Services / Offerings section -->
+
+  <!-- BUILD: About / Rationale / Story section -->
+
+  <!-- BUILD: Contact / Booking / CTA section -->
+
+  <!-- BUILD: Footer -->
+
+</div>
+
+
+<!-- ================================================================
+     V3 CONFIGURATION
+     BUILD: Edit only this block.
+     Set scenes from CHAPTER_MAP_BLOCK.
+     Set video path, scroll ratio, and nav threshold.
+     ================================================================ -->
+<script>
+window.V3_CONFIG = {
+
+  /* BUILD: Scroll ratio — what fraction of total scroll is video experience */
+  videoRatio:  0.65,
+
+  /* Scrub mode — 'full' for direct scrub, 'eased' for cinematic lag */
+  /* Corresponds to scroll-video-modes palette: V1=full, V1-eased=eased */
+  scrubMode:   'full',
+
+  /* Scene fade window — 0.025 = 2.5% of total scroll for in/out fade */
+  fadeRange:   0.025,
+
+  /* Stagger lag — how spread out headline/subhead/pitch entrances are */
+  staggerLag:  0.55,
+
+  /* Nav behavior */
+  nav: {
+    showAfter: 0.04  /* Nav appears after this much scroll progress */
+  },
+
+  /* BUILD: Scene array — one object per chapter from CHAPTER_MAP_BLOCK
+     id:    must match the div id in the HTML above
+     start: scroll progress (0–1) when scene begins fading in
+     end:   scroll progress (0–1) when scene finishes fading out
+  */
+  scenes: [
+    /* BUILD: Paste scene objects here. Example:
+    { id: 'scene-city-exterior',      start: 0.00, end: 0.08 },
+    { id: 'scene-building-entry',     start: 0.07, end: 0.16 },
+    { id: 'scene-interior-reveal',    start: 0.15, end: 0.24 },
+    { id: 'scene-tools-close',        start: 0.23, end: 0.32 },
+    { id: 'scene-barber-client-wide', start: 0.31, end: 0.40 },
+    { id: 'scene-scissor-closeup',    start: 0.39, end: 0.48 },
+    { id: 'scene-hair-reveal',        start: 0.47, end: 0.56 },
+    { id: 'scene-full-cut-reveal',    start: 0.55, end: 0.65 },
+    */
+  ]
+
+};
+</script>
+
+
+<!-- ================================================================
+     V3 SCROLL SCRUB ENGINE
+     DO NOT MODIFY ANYTHING BETWEEN ENGINE START AND ENGINE END.
+     Copy engine/scroll-scrub.js verbatim here.
+     ================================================================ -->
+<script>
+/* ENGINE START — DO NOT MODIFY */
+
+(function V3Engine() {
+  'use strict';
+
+  var cfg         = window.V3_CONFIG   || {};
+  var SCRUB_MODE  = cfg.scrubMode      || 'full';
+  var VIDEO_RATIO = cfg.videoRatio     || 0.65;
+  var FADE_RANGE  = cfg.fadeRange      || 0.025;
+  var EASED       = SCRUB_MODE         === 'eased';
+  var STAGGER_LAG = cfg.staggerLag     || 0.55;
+
+  var video, maxScroll, raf;
+  var lerpTime = 0, targetTime = 0;
+
+  function init() {
+    video = document.getElementById('v3-video');
+    if (!video) { console.warn('[V3] #v3-video not found.'); return; }
+
+    video.muted       = true;
+    video.playsInline = true;
+    video.preload     = 'auto';
+
+    if (SCRUB_MODE === 'ambient') {
+      video.loop = true;
+      video.play().catch(function() {});
+    } else {
+      video.load();
+      document.addEventListener('touchstart', function unlockVideo() {
+        video.play().then(function() { video.pause(); video.currentTime = 0; });
+        document.removeEventListener('touchstart', unlockVideo);
+      }, { once: true });
+    }
+
+    measure();
+    onScroll();
+    window.addEventListener('scroll',  onScroll, { passive: true });
+    window.addEventListener('resize',  measure);
+  }
+
+  function measure() {
+    maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+  }
+
+  function onScroll() {
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+
+  function tick() {
+    raf = null;
+    var p = window.scrollY / maxScroll;
+    scrubVideo(p);
+    updateScenes(p);
+    updateNav(p);
+    updateBelowFold(p);
+    if (EASED && Math.abs(targetTime - lerpTime) > 0.005) {
+      raf = requestAnimationFrame(tick);
+    }
+  }
+
+  function scrubVideo(p) {
+    if (SCRUB_MODE === 'ambient') return;
+    if (video.readyState < 2 || !video.duration) return;
+    var videoProgress = Math.min(p / VIDEO_RATIO, 1);
+    targetTime = videoProgress * video.duration;
+    if (EASED) {
+      lerpTime += (targetTime - lerpTime) * 0.10;
+      try { video.currentTime = lerpTime; } catch(e) {}
+    } else {
+      try { video.currentTime = targetTime; } catch(e) {}
+    }
+  }
+
+  function updateScenes(p) {
+    var scenes = cfg.scenes || [];
+    for (var i = 0; i < scenes.length; i++) renderScene(scenes[i], p);
+  }
+
+  function renderScene(scene, p) {
+    var el = document.getElementById(scene.id);
+    if (!el) return;
+    var inRange = p >= scene.start && p <= scene.end;
+    var opacity = 0;
+    if (inRange) {
+      var fadeIn  = (p - scene.start) / FADE_RANGE;
+      var fadeOut = (scene.end   - p) / FADE_RANGE;
+      opacity     = clamp(Math.min(fadeIn, fadeOut), 0, 1);
+    }
+    el.style.opacity    = opacity;
+    el.style.visibility = opacity > 0 ? 'visible' : 'hidden';
+    if (opacity > 0) {
+      var children = el.querySelectorAll('[data-stagger]');
+      for (var j = 0; j < children.length; j++) {
+        var idx       = parseInt(children[j].getAttribute('data-stagger'), 10) || 0;
+        var offset    = idx * STAGGER_LAG * FADE_RANGE;
+        var childFade = clamp((p - scene.start - offset) / FADE_RANGE, 0, 1);
+        children[j].style.opacity = childFade;
+      }
+    }
+  }
+
+  function updateNav(p) {
+    var nav = document.getElementById('v3-nav');
+    if (!nav) return;
+    var threshold = (cfg.nav && cfg.nav.showAfter !== undefined) ? cfg.nav.showAfter : 0.04;
+    nav.style.opacity    = p > threshold ? '1' : '0';
+    nav.style.visibility = p > threshold ? 'visible' : 'hidden';
+  }
+
+  function updateBelowFold(p) {
+    var el = document.getElementById('v3-below-fold');
+    if (!el) return;
+    var revealStart = VIDEO_RATIO + 0.02;
+    var opacity     = clamp((p - revealStart) / 0.04, 0, 1);
+    el.style.opacity = opacity;
+  }
+
+  function clamp(val, min, max) {
+    return val < min ? min : val > max ? max : val;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+/* ENGINE END */
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus — AI Infrastructure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --color-bg:           #060C1A;
+      --color-surface:      #0A1628;
+      --color-surface-2:    #0F1E38;
+      --color-text:         #D8E8F4;
+      --color-muted:        #3A5070;
+      --color-accent:       #22C9E8;
+      --color-accent-hover: #55DFF5;
+      --color-accent-dim:   rgba(34,201,232,0.12);
+      --font-display:       'Space Mono', monospace;
+      --font-body:          'Space Grotesk', system-ui, sans-serif;
+    }
+
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      cursor: none;
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Cursor ─────────────────────────────────────────────── */
+    #cursor {
+      position: fixed;
+      width: 8px; height: 8px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width 0.2s ease, height 0.2s ease, background 0.2s ease;
+      mix-blend-mode: screen;
+    }
+    #cursor.expand {
+      width: 32px; height: 32px;
+      background: transparent;
+      border: 1px solid var(--color-accent);
+    }
+
+    /* ── Scroll Progress ────────────────────────────────────── */
+    #scroll-progress {
+      position: fixed; top: 0; left: 0;
+      height: 1px; width: 0%;
+      background: var(--color-accent);
+      z-index: 200; pointer-events: none;
+    }
+
+    /* ── Scroll Container ───────────────────────────────────── */
+    #v3-scroll-container { height: 700vh; position: relative; }
+
+    /* ── Sticky Wrapper ─────────────────────────────────────── */
+    #v3-video-wrapper {
+      position: sticky; top: 0;
+      height: 100vh; width: 100%;
+      overflow: hidden;
+      background: var(--color-bg);
+    }
+
+    /* ── Videos (both scrubbed as one sequence) ─────────────── */
+    #v3-video, #v3-video2 {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+    }
+    /* Video 2 starts hidden — engine crossfades it in at midpoint */
+    #v3-video2 { opacity: 0; }
+
+    /* Grain overlay — atmospheric */
+    .grain {
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.035;
+      pointer-events: none; z-index: 1;
+    }
+
+    /* ── Scenes ─────────────────────────────────────────────── */
+    .v3-scene {
+      position: absolute; inset: 0;
+      opacity: 0; visibility: hidden;
+      pointer-events: none; z-index: 2;
+    }
+    [data-stagger] {
+      position: absolute; opacity: 0;
+      pointer-events: none; line-height: 1.05;
+    }
+
+    /* ── Scene Typography ───────────────────────────────────── */
+    .v3-headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.01em;
+      text-shadow: 0 2px 60px rgba(0,0,0,0.9), 0 1px 12px rgba(0,0,0,0.7);
+    }
+    .v3-subhead {
+      font-family: var(--font-body);
+      font-weight: 300;
+      color: var(--color-text);
+      letter-spacing: 0.01em;
+      text-shadow: 0 1px 20px rgba(0,0,0,0.9);
+      max-width: 38ch;
+    }
+    .v3-pitch {
+      font-family: var(--font-display);
+      font-weight: 400;
+      font-size: 0.6rem;
+      color: var(--color-accent);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(34,201,232,0.4);
+    }
+
+    /* ── Scene 1: city-exterior (0% frame analysis) ─────────── */
+    /* Frame: portal beam rises dead center. Tall skyscraper on far left.
+       Negative space: top-RIGHT corner (dark sky beside portal beam),
+       and lower-right below the rightmost buildings.
+       LEFT side is occupied by the skyscraper — DO NOT put headline there.
+       Pitch sits bottom-left where the left building base creates a dark ledge. */
+    #scene-exterior .v3-headline {
+      font-size: clamp(3rem, 6vw, 6rem);
+      top: 6%; right: 6%;
+      text-align: right;
+    }
+    #scene-exterior .v3-subhead {
+      font-size: clamp(0.85rem, 1.1vw, 1.05rem);
+      top: calc(6% + clamp(3rem, 6vw, 6rem) + 1rem);
+      right: 6%;
+      text-align: right;
+      max-width: 32ch;
+    }
+    #scene-exterior .v3-pitch { bottom: 6%; left: 6%; }
+
+    /* ── Scene 2: city-approach (25% frame analysis) ─────────── */
+    /* Frame: ships flying top-left toward portal. AI CORE platform visible.
+       Buildings pack the mid and lower frame. Mist/cloud forms in lower band.
+       Negative space: lower-LEFT in the fog (below building height, dark cloud).
+       Top-right has ships — avoid headline there.
+       Headline drops to bottom like we're descending INTO the city. */
+    #scene-approach .v3-headline {
+      font-size: clamp(2.5rem, 5vw, 5rem);
+      bottom: 28%; left: 6%;
+    }
+    #scene-approach .v3-subhead {
+      font-size: clamp(0.8rem, 0.95vw, 0.95rem);
+      top: 8%; right: 6%;
+      text-align: right;
+      max-width: 30ch;
+    }
+    #scene-approach .v3-pitch { bottom: 6%; right: 6%; }
+
+    /* ── Scene 3: core-gate (75% frame analysis — Video 2) ──── */
+    /* Frame: interior corridor, perfectly symmetrical tunnel.
+       "AI CORE" neon sign already occupies top-center.
+       Side wall panels have data readouts — medium busy.
+       Smoke/fog fills the floor. The LOWER-LEFT wall panel area is the
+       best anchor — text reads like it's embedded in the corridor itself.
+       Deliberately break the tunnel's vertical symmetry: ALL text on one side. */
+    #scene-gate .v3-headline {
+      font-size: clamp(2.2rem, 4vw, 4rem);
+      bottom: 30%; left: 5%;
+    }
+    #scene-gate .v3-subhead {
+      font-size: clamp(0.75rem, 0.9vw, 0.9rem);
+      bottom: 18%; left: 5%;
+      max-width: 28ch;
+    }
+    #scene-gate .v3-pitch {
+      bottom: 6%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    /* ── Scene 4: core-interior (100% frame analysis — Video 2) */
+    /* Frame: massive glowing sphere dead center, suspended by circular ring.
+       Mechanical arms extend diagonally from the ring to lower corners.
+       Sphere is visually dominant — center, upper-center are unusable.
+       Negative space: below the sphere between the arm extensions.
+       Text anchors to LOWER CORNERS, under the diagonal arms.
+       Do NOT use center. Do NOT use top. */
+    #scene-interior .v3-headline {
+      font-size: clamp(2rem, 4vw, 4.5rem);
+      bottom: 24%; right: 6%;
+      text-align: right;
+    }
+    #scene-interior .v3-subhead {
+      font-size: clamp(0.75rem, 0.9vw, 0.9rem);
+      bottom: 12%; left: 6%;
+      max-width: 28ch;
+    }
+    #scene-interior .v3-pitch {
+      bottom: 4%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    /* ── Nav (Ghost Minimal) ────────────────────────────────── */
+    #v3-nav {
+      position: absolute; top: 0; left: 0; right: 0;
+      z-index: 50;
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 2.5rem;
+      transition: background 0.6s ease, backdrop-filter 0.6s ease;
+    }
+    #v3-nav.scrolled {
+      background: rgba(6,12,26,0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--color-text);
+      letter-spacing: 0.12em;
+      cursor: none;
+    }
+    .nav-logo span { color: var(--color-accent); }
+    .nav-links { display: flex; align-items: center; gap: 2.5rem; }
+    .nav-link {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      cursor: none;
+      transition: color 0.3s ease;
+    }
+    .nav-link:hover { color: var(--color-text); }
+    .nav-enter {
+      font-family: var(--font-display);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      border: 1px solid rgba(34,201,232,0.4);
+      padding: 0.55rem 1.2rem;
+      cursor: none;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+    .nav-enter:hover {
+      background: var(--color-accent-dim);
+      border-color: var(--color-accent);
+    }
+
+    /* ── Scroll Hint ────────────────────────────────────────── */
+    .scroll-hint {
+      position: absolute; bottom: 4%; left: 6%;
+      display: flex; align-items: center; gap: 1rem;
+      pointer-events: none; z-index: 10;
+      transition: opacity 0.8s ease;
+    }
+    .scroll-hint.hidden { opacity: 0; }
+    .scroll-hint-line {
+      width: 40px; height: 1px;
+      background: var(--color-muted);
+      animation: linePulse 2s ease-in-out infinite;
+    }
+    .scroll-hint-text {
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+    }
+    @keyframes linePulse {
+      0%,100% { transform: scaleX(0.4); transform-origin: left; opacity: 0.3; }
+      50%      { transform: scaleX(1);   transform-origin: left; opacity: 1; }
+    }
+
+    /* ════════════════════════════════════════════════════════
+       BELOW FOLD
+    ════════════════════════════════════════════════════════ */
+    #v3-below-fold { opacity: 0; background: var(--color-bg); }
+
+    /* ── Services (P4: Offer first) ─────────────────────────── */
+    .section-services {
+      padding: 8rem 0 0;
+      border-top: 1px solid rgba(34,201,232,0.08);
+    }
+    .services-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0 6% 3rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .services-title {
+      font-family: var(--font-display);
+      font-size: clamp(0.7rem, 1vw, 0.85rem);
+      font-weight: 400;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+    }
+    .services-sub {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      color: var(--color-muted);
+      letter-spacing: 0.08em;
+    }
+    .services-grid {
+      display: grid;
+      grid-template-columns: 55% 45%;
+    }
+
+    /* Featured service — left */
+    .service-featured {
+      padding: 4rem 6%;
+      border-right: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      cursor: none;
+      transition: background 0.5s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .service-featured::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--color-accent-dim);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .service-featured:hover::before { opacity: 1; }
+    .service-featured > * { position: relative; z-index: 1; }
+
+    .service-num {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--color-accent);
+    }
+    .service-name {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 3.5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--color-text);
+      line-height: 1.1;
+    }
+    .service-desc {
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--color-muted);
+      max-width: 36ch;
+    }
+    .service-link {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-top: auto;
+      cursor: none;
+    }
+    .service-link::after {
+      content: '';
+      display: block;
+      width: 24px; height: 1px;
+      background: var(--color-accent);
+      transition: width 0.4s ease;
+    }
+    .service-featured:hover .service-link::after { width: 48px; }
+
+    /* Service rows — right stack */
+    .services-stack { display: flex; flex-direction: column; }
+    .service-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: start;
+      gap: 1.5rem;
+      padding: 2.5rem 6% 2.5rem 4%;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      cursor: none;
+      transition: background 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .service-row::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 1px;
+      background: var(--color-accent);
+      transform: scaleY(0);
+      transform-origin: top;
+      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .service-row:hover { background: var(--color-surface); }
+    .service-row:hover::before { transform: scaleY(1); }
+
+    .row-num {
+      font-family: var(--font-display);
+      font-size: 0.6rem;
+      color: var(--color-muted);
+      padding-top: 0.35rem;
+      letter-spacing: 0.1em;
+    }
+    .row-content { }
+    .row-name {
+      font-family: var(--font-display);
+      font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+    .row-desc {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 300;
+      color: var(--color-muted);
+      line-height: 1.6;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.4s ease;
+    }
+    .service-row:hover .row-desc { max-height: 4rem; opacity: 1; }
+    .row-arrow {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      color: var(--color-muted);
+      padding-top: 0.3rem;
+      transition: color 0.3s ease, transform 0.3s ease;
+    }
+    .service-row:hover .row-arrow { color: var(--color-accent); transform: translateX(4px); }
+
+    /* ── Story (right-heavy, vertical brand label left) ─────── */
+    .section-story {
+      padding: 9rem 0 8rem;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 0;
+      overflow: hidden;
+    }
+    .story-label-col {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid rgba(255,255,255,0.04);
+      padding: 0 1.5rem;
+    }
+    .story-vertical-label {
+      font-family: var(--font-display);
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      white-space: nowrap;
+    }
+    .story-content {
+      padding: 0 6% 0 5%;
+      display: grid;
+      grid-template-columns: 1fr 42%;
+      gap: 6rem;
+      align-items: start;
+    }
+    .story-left { padding-top: 1rem; }
+    .story-eyebrow {
+      font-family: var(--font-display);
+      font-size: 0.6rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 2rem;
+    }
+    .story-headline {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 4rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      color: var(--color-text);
+    }
+    .story-headline em {
+      font-style: italic;
+      color: var(--color-accent);
+    }
+    .story-right { padding-top: 4rem; }
+    .story-body {
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 300;
+      line-height: 1.85;
+      color: var(--color-muted);
+      margin-bottom: 2.5rem;
+    }
+    .story-body + .story-body { margin-bottom: 0; }
+
+    /* ── Proof (terminal data grid) ─────────────────────────── */
+    .section-proof {
+      padding: 6rem 6%;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+    .proof-terminal-bar {
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      color: var(--color-muted);
+      margin-bottom: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .proof-terminal-bar::before {
+      content: '▶';
+      color: var(--color-accent);
+      font-size: 0.5rem;
+    }
+    .proof-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,0.04);
+      margin-bottom: 2rem;
+    }
+    .proof-cell {
+      background: var(--color-bg);
+      padding: 2.5rem 2rem;
+    }
+    .proof-label {
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 1rem;
+    }
+    .proof-value {
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 4vw, 3.8rem);
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    /* Highlight first and last values differently */
+    .proof-cell:first-child .proof-value { color: var(--color-accent); }
+    .proof-cell:last-child .proof-value  { font-size: clamp(1.8rem, 3vw, 2.8rem); }
+
+    .proof-status {
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      color: var(--color-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .proof-status::before {
+      content: '';
+      display: block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      box-shadow: 0 0 8px var(--color-accent);
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+
+    /* ── CTA ─────────────────────────────────────────────────── */
+    .section-cta {
+      padding: 0;
+      border-top: 1px solid rgba(34,201,232,0.08);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 1fr auto;
+    }
+    .cta-main {
+      padding: 8rem 6% 4rem;
+      display: grid;
+      grid-template-columns: 1fr 36%;
+      align-items: end;
+      gap: 4rem;
+    }
+    .cta-headline {
+      font-family: var(--font-display);
+      font-size: clamp(4.5rem, 10vw, 10rem);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.025em;
+      color: var(--color-text);
+    }
+    .cta-headline .dim { color: var(--color-surface-2); -webkit-text-stroke: 1px rgba(34,201,232,0.2); }
+    .cta-right {
+      padding-bottom: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2rem;
+    }
+    .cta-sub {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--color-muted);
+      max-width: 26ch;
+    }
+    .cta-btn {
+      display: inline-block;
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-bg);
+      background: var(--color-accent);
+      padding: 1rem 2.5rem;
+      cursor: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: var(--color-accent-hover);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .cta-btn:hover::before { transform: scaleX(1); }
+    .cta-btn span { position: relative; z-index: 1; }
+
+    /* Decorative scan line */
+    .cta-scanline {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--color-accent), transparent);
+      opacity: 0.3;
+      margin: 0 6%;
+    }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    .section-footer {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 2rem 6%;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      gap: 2rem;
+    }
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--color-muted);
+      letter-spacing: 0.12em;
+    }
+    .footer-status {
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      letter-spacing: 0.14em;
+      color: var(--color-muted);
+      opacity: 0.5;
+      text-align: center;
+    }
+    .footer-right {
+      text-align: right;
+      font-family: var(--font-display);
+      font-size: 0.55rem;
+      letter-spacing: 0.12em;
+      color: var(--color-muted);
+      opacity: 0.4;
+    }
+
+    /* ── Reveal ─────────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(1.5rem);
+      transition: opacity 1.4s cubic-bezier(0.16,1,0.3,1),
+                  transform 1.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.12s; }
+    .reveal-d2 { transition-delay: 0.26s; }
+    .reveal-d3 { transition-delay: 0.42s; }
+
+    /* ── Mobile ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      body { cursor: auto; }
+      #cursor { display: none; }
+      .services-grid { grid-template-columns: 1fr; }
+      .section-story { grid-template-columns: 1fr; }
+      .story-label-col { display: none; }
+      .story-content { grid-template-columns: 1fr; gap: 3rem; }
+      .proof-grid { grid-template-columns: repeat(2,1fr); }
+      .cta-main { grid-template-columns: 1fr; }
+      .section-footer { grid-template-columns: 1fr; text-align: center; }
+      #v3-nav { padding: 1.25rem 1.5rem; }
+      .nav-links .nav-link { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="cursor"></div>
+  <div id="scroll-progress"></div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SCROLL CONTAINER — 700vh / 4 scenes
+       Video 1: AICity_Video1.mp4 — aerial approach (scenes 1–2)
+       Video 2: AICity_Video2.mp4 — interior core (scenes 3–4)
+       Both treated as one continuous scrub sequence.
+       Crossfade at p=0.295→0.355 (midpoint of VIDEO_RATIO)
+  ═══════════════════════════════════════════════════════ -->
+  <div id="v3-scroll-container">
+    <div id="v3-video-wrapper">
+
+      <!-- Video 1: aerial approach, scrubs p=0 → p=0.325 -->
+      <video id="v3-video" muted playsinline preload="auto">
+        <source src="AICity_Video1.mp4" type="video/mp4">
+      </video>
+
+      <!-- Video 2: interior core, crossfades in at p=0.325, scrubs p=0.325 → p=0.65 -->
+      <video id="v3-video2" muted playsinline preload="auto">
+        <source src="AICity_Video2.mp4" type="video/mp4">
+      </video>
+
+      <div class="grain" aria-hidden="true"></div>
+
+      <!-- Scene 1 — City Exterior (Video 1, p=0.00→0.18)
+           Top-right: dark sky beside the portal beam. Left has skyscraper. -->
+      <div class="v3-scene" id="scene-exterior">
+        <p class="v3-headline" data-stagger="0">100,000<br>Nodes.</p>
+        <p class="v3-subhead"  data-stagger="1">All of it runs on one thing.</p>
+        <p class="v3-pitch"    data-stagger="2">Nexus — AI Infrastructure</p>
+      </div>
+
+      <!-- Scene 2 — City Approach (Video 1, p=0.18→0.33)
+           Headline drops to lower-left fog as we descend. Subhead top-right (clear sky). -->
+      <div class="v3-scene" id="scene-approach">
+        <p class="v3-headline" data-stagger="0">You Were<br>Expected.</p>
+        <p class="v3-subhead"  data-stagger="1">The system already knows<br>you're here.</p>
+        <p class="v3-pitch"    data-stagger="2">Approach authorized.</p>
+      </div>
+
+      <!-- Scene 3 — Core Gate (Video 2, p=0.36→0.52)
+           Tunnel corridor. All text left-aligned to break symmetry. Pitch centered in smoke. -->
+      <div class="v3-scene" id="scene-gate">
+        <p class="v3-headline" data-stagger="0">The Core<br>Accepts.</p>
+        <p class="v3-subhead"  data-stagger="1">What runs inside<br>powers everything outside.</p>
+        <p class="v3-pitch"    data-stagger="2">Access: Granted</p>
+      </div>
+
+      <!-- Scene 4 — Core Interior (Video 2, p=0.52→0.65)
+           Sphere center dominant. Headline bottom-right under arm. Subhead bottom-left. -->
+      <div class="v3-scene" id="scene-interior">
+        <p class="v3-headline" data-stagger="0">Everything<br>Runs on This.</p>
+        <p class="v3-subhead"  data-stagger="1">You are inside the system<br>that powers the systems.</p>
+        <p class="v3-pitch"    data-stagger="2">Nexus Core — Active</p>
+      </div>
+
+      <!-- Nav — Ghost Minimal, always visible -->
+      <nav id="v3-nav">
+        <a class="nav-logo" href="#">NEX<span>_</span>US</a>
+        <div class="nav-links">
+          <a class="nav-link" href="#services">Services</a>
+          <a class="nav-link" href="#story">About</a>
+          <a class="nav-enter" href="#cta">Enter Core</a>
+        </div>
+      </nav>
+
+      <!-- Scroll hint -->
+      <div class="scroll-hint" id="scroll-hint">
+        <div class="scroll-hint-line"></div>
+        <span class="scroll-hint-text">Scroll to enter</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       BELOW FOLD
+       Pattern P4: Offer → Story → Proof → Mood → Close
+  ═══════════════════════════════════════════════════════ -->
+  <div id="v3-below-fold">
+
+    <!-- SERVICES — Offer first -->
+    <section class="section-services" id="services">
+      <div class="services-header">
+        <span class="services-title reveal">What Nexus Does</span>
+        <span class="services-sub reveal">04 Core Systems</span>
+      </div>
+      <div class="services-grid">
+
+        <!-- Featured service -->
+        <div class="service-featured reveal">
+          <div class="service-num">01 — Featured</div>
+          <div class="service-name">Infra<br>structure</div>
+          <p class="service-desc">The backbone of systems that never sleep. Distributed AI architecture built for planetary scale — no single point of failure, no ceiling.</p>
+          <a class="service-link" href="#cta">Explore</a>
+        </div>
+
+        <!-- Service stack -->
+        <div class="services-stack">
+          <div class="service-row reveal reveal-d1">
+            <div class="row-num">02</div>
+            <div class="row-content">
+              <div class="row-name">Integration</div>
+              <div class="row-desc">Connect anything to everything. 140+ enterprise integrations, deployed in hours not months.</div>
+            </div>
+            <div class="row-arrow">→</div>
+          </div>
+          <div class="service-row reveal reveal-d2">
+            <div class="row-num">03</div>
+            <div class="row-content">
+              <div class="row-name">Intelligence</div>
+              <div class="row-desc">Decision systems that learn from every interaction. Continuously improving, never static.</div>
+            </div>
+            <div class="row-arrow">→</div>
+          </div>
+          <div class="service-row reveal reveal-d3">
+            <div class="row-num">04</div>
+            <div class="row-content">
+              <div class="row-name">Interface</div>
+              <div class="row-desc">APIs, dashboards, SDKs built for how developers actually work. Not how we imagine they do.</div>
+            </div>
+            <div class="row-arrow">→</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- STORY — right-heavy, vertical label -->
+    <section class="section-story" id="story">
+      <div class="story-label-col">
+        <span class="story-vertical-label">Nexus Systems</span>
+      </div>
+      <div class="story-content">
+        <div class="story-left">
+          <p class="story-eyebrow reveal">Who We Are</p>
+          <h2 class="story-headline reveal reveal-d1">
+            The system<br>that powers<br>the <em>systems.</em>
+          </h2>
+        </div>
+        <div class="story-right">
+          <p class="story-body reveal reveal-d2">
+            Nexus was not built to be seen. It was built to work — invisibly, continuously, at a scale that makes other infrastructure feel like scaffolding.
+          </p>
+          <p class="story-body reveal reveal-d3">
+            Every system you rely on relies on something. Nexus is that something. We don't ask for credit. We ask for uptime.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROOF — terminal data -->
+    <section class="section-proof">
+      <div class="proof-terminal-bar reveal">sys.nexus --status --verbose</div>
+      <div class="proof-grid">
+        <div class="proof-cell">
+          <div class="proof-label">Uptime</div>
+          <div class="proof-value" data-count="99.98" data-suffix="%" data-decimal="true">99.98%</div>
+        </div>
+        <div class="proof-cell">
+          <div class="proof-label">Response</div>
+          <div class="proof-value">0.3<span style="font-size:0.4em;letter-spacing:0.1em;">ms</span></div>
+        </div>
+        <div class="proof-cell">
+          <div class="proof-label">Integrations</div>
+          <div class="proof-value" data-count="140" data-suffix="+">140+</div>
+        </div>
+        <div class="proof-cell">
+          <div class="proof-label">Industries</div>
+          <div class="proof-value" data-count="12">12</div>
+        </div>
+      </div>
+      <div class="proof-status reveal">SYSTEM STATUS: ALL NODES OPERATIONAL</div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section-cta" id="cta">
+      <div class="cta-main">
+        <div class="cta-left">
+          <h2 class="cta-headline reveal">
+            <span class="dim">ENTER</span><br>THE<br>CORE.
+          </h2>
+        </div>
+        <div class="cta-right">
+          <p class="cta-sub reveal reveal-d1">
+            Explore what Nexus can do for systems that can't afford to stop.
+          </p>
+          <a class="cta-btn reveal reveal-d2" href="#services"><span>Explore Services →</span></a>
+        </div>
+      </div>
+      <div class="cta-scanline"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="section-footer">
+      <span class="footer-brand">NEXUS</span>
+      <span class="footer-status">© ALL SYSTEMS OPERATIONAL</span>
+      <span class="footer-right">v4.1.0 — STABLE</span>
+    </footer>
+
+  </div>
+
+  <!-- CONFIG -->
+  <script>
+  window.V3_CONFIG = {
+    scrubMode:   'full',
+    videoRatio:   0.65,   // 65% of scroll container drives video
+    videoSplit:   0.5,    // Video 1 covers first 50% of scrub, Video 2 second 50%
+    crossfadeWidth: 0.06, // crossfade window = 6% of scroll
+    fadeRange:    0.022,
+    staggerLag:   0.55,
+    nav: { showAfter: 0 },
+    scenes: [
+      { id: 'scene-exterior', start: 0.00, end: 0.18 }, // Video 1: wide aerial
+      { id: 'scene-approach', start: 0.18, end: 0.33 }, // Video 1: descent (crossfade follows)
+      { id: 'scene-gate',     start: 0.36, end: 0.52 }, // Video 2: gate entry
+      { id: 'scene-interior', start: 0.52, end: 0.65 }  // Video 2: core interior
+    ]
+  };
+  </script>
+
+  <!-- ENGINE START — DO NOT MODIFY -->
+  <script>
+  (function V3Engine() {
+    'use strict';
+    var cfg        = window.V3_CONFIG || {};
+    var VIDEO_RATIO     = cfg.videoRatio     || 0.65;
+    var VIDEO_SPLIT     = cfg.videoSplit     || 0.5;
+    var CROSSFADE_WIDTH = cfg.crossfadeWidth || 0.06;
+    var FADE_RANGE      = cfg.fadeRange      || 0.025;
+    var STAGGER_LAG     = cfg.staggerLag     || 0.55;
+
+    var video1, video2;
+    var heroMaxScroll, totalMaxScroll, raf;
+
+    /* Split points within scroll progress (0→1 inside hero container) */
+    /* V1 drives:  p = 0           → V1_END  */
+    /* Crossfade:  p = FADE_LOW    → FADE_HIGH */
+    /* V2 drives:  p = V2_START    → VIDEO_RATIO */
+    var V1_END    = VIDEO_RATIO * VIDEO_SPLIT;            // 0.325
+    var FADE_LOW  = V1_END - CROSSFADE_WIDTH / 2;         // 0.295
+    var FADE_HIGH = V1_END + CROSSFADE_WIDTH / 2;         // 0.355
+    var V2_START  = V1_END;                               // 0.325
+
+    /* ── Unlock helper: Chrome won't decode any frame until play() fires ── */
+    function unlockVideo(v) {
+      v.muted = true; v.playsInline = true; v.preload = 'auto';
+      v.load();
+      v.addEventListener('loadedmetadata', function() {
+        v.play().then(function() {
+          v.pause();
+          try { v.currentTime = 0.001; } catch(e){}
+        }).catch(function() {
+          try { v.currentTime = 0.001; } catch(e){}
+        });
+      }, { once: true });
+    }
+
+    function init() {
+      video1 = document.getElementById('v3-video');
+      video2 = document.getElementById('v3-video2');
+      if (!video1) { console.warn('[V3] #v3-video not found'); return; }
+
+      unlockVideo(video1);
+      if (video2) unlockVideo(video2);
+
+      document.addEventListener('touchstart', function unlockTouch() {
+        [video1, video2].forEach(function(v) {
+          if (v) v.play().then(function() { v.pause(); }).catch(function(){});
+        });
+        document.removeEventListener('touchstart', unlockTouch);
+      }, { once: true });
+
+      measure();
+      onScroll();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', measure);
+    }
+
+    function measure() {
+      /* FIX: measure hero scroll independently of below-fold content.
+         Using the scroll container's own height prevents below-fold
+         sections from altering maxScroll and causing video reset. */
+      var container = document.getElementById('v3-scroll-container');
+      heroMaxScroll  = container
+        ? Math.max(container.offsetHeight - window.innerHeight, 1)
+        : Math.max(window.innerHeight * 6, 1);
+      totalMaxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+    }
+
+    function onScroll() { if (!raf) raf = requestAnimationFrame(tick); }
+
+    function tick() {
+      raf = null;
+      /* p is clamped to the hero container — immune to below-fold height changes */
+      var p      = Math.min(window.scrollY / heroMaxScroll, 1.05);
+      var totalP = window.scrollY / totalMaxScroll;
+
+      scrubVideos(p);
+      updateScenes(p);
+      updateNav(p);
+      updateBelowFold(p);
+      updateScrollHint(p);
+      updateProgressBar(totalP);
+    }
+
+    function scrubVideos(p) {
+      /* ── Video 1: scrubs from p=0 to p=V1_END ── */
+      if (video1 && video1.readyState >= 2 && video1.duration) {
+        var p1 = Math.min(p / V1_END, 1);
+        try { video1.currentTime = p1 * video1.duration; } catch(e){}
+      }
+
+      /* ── Video 2: scrubs from p=V2_START to p=VIDEO_RATIO ── */
+      if (video2 && video2.readyState >= 2 && video2.duration) {
+        var v2Range = VIDEO_RATIO - V2_START;
+        var p2 = Math.min(Math.max(p - V2_START, 0) / v2Range, 1);
+        try { video2.currentTime = p2 * video2.duration; } catch(e){}
+      }
+
+      /* ── Crossfade: linear blend through the handoff window ── */
+      var crossT = Math.min(Math.max((p - FADE_LOW) / (FADE_HIGH - FADE_LOW), 0), 1);
+      if (video1) video1.style.opacity = (1 - crossT);
+      if (video2) video2.style.opacity = crossT;
+    }
+
+    function updateScenes(p) {
+      var scenes = cfg.scenes || [];
+      for (var i = 0; i < scenes.length; i++) renderScene(scenes[i], p);
+    }
+
+    function renderScene(scene, p) {
+      var el = document.getElementById(scene.id);
+      if (!el) return;
+      var opacity = 0;
+      if (p >= scene.start && p <= scene.end) {
+        opacity = clamp(
+          Math.min((p - scene.start) / FADE_RANGE, (scene.end - p) / FADE_RANGE),
+          0, 1
+        );
+      }
+      el.style.opacity    = opacity;
+      el.style.visibility = opacity > 0 ? 'visible' : 'hidden';
+      if (opacity > 0) {
+        var ch = el.querySelectorAll('[data-stagger]');
+        for (var j = 0; j < ch.length; j++) {
+          var idx = parseInt(ch[j].getAttribute('data-stagger'), 10) || 0;
+          ch[j].style.opacity = clamp(
+            (p - scene.start - idx * STAGGER_LAG * FADE_RANGE) / FADE_RANGE,
+            0, 1
+          );
+        }
+      }
+    }
+
+    function updateNav(p) {
+      var nav = document.getElementById('v3-nav');
+      if (!nav) return;
+      var t = (cfg.nav && cfg.nav.showAfter !== undefined) ? cfg.nav.showAfter : 0;
+      nav.style.opacity       = p >= t ? '1' : '0';
+      nav.style.pointerEvents = p >= t ? 'all' : 'none';
+      if (p > 0.05) nav.classList.add('scrolled');
+      else          nav.classList.remove('scrolled');
+    }
+
+    function updateBelowFold(p) {
+      var el = document.getElementById('v3-below-fold');
+      if (!el) return;
+      el.style.opacity = clamp((p - (VIDEO_RATIO + 0.02)) / 0.04, 0, 1);
+    }
+
+    function updateScrollHint(p) {
+      var h = document.getElementById('scroll-hint');
+      if (h && p > 0.03) h.classList.add('hidden');
+    }
+
+    function updateProgressBar(totalP) {
+      var bar = document.getElementById('scroll-progress');
+      if (bar) bar.style.width = (Math.min(totalP, 1) * 100) + '%';
+    }
+
+    function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  })();
+  </script>
+  <!-- ENGINE END -->
+
+  <!-- Micro-interactions -->
+  <script>
+  (function() {
+    /* Cursor */
+    var cur = document.getElementById('cursor');
+    document.addEventListener('mousemove', function(e) {
+      cur.style.left = e.clientX + 'px';
+      cur.style.top  = e.clientY + 'px';
+    });
+    document.querySelectorAll('a, button, .service-featured, .service-row').forEach(function(el) {
+      el.addEventListener('mouseenter', function() { cur.classList.add('expand'); });
+      el.addEventListener('mouseleave', function() { cur.classList.remove('expand'); });
+    });
+
+    /* Scroll progress is handled by the engine — no duplicate listener needed */
+
+    /* Scroll reveal */
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.12 });
+      document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+    } else {
+      document.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('in-view'); });
+    }
+
+    /* Count-up on proof values */
+    var counted = false;
+    var proofSection = document.querySelector('.section-proof');
+    if (proofSection && 'IntersectionObserver' in window) {
+      var countIO = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting && !counted) {
+          counted = true;
+          document.querySelectorAll('[data-count]').forEach(function(el) {
+            var target = parseFloat(el.dataset.count);
+            var suffix = el.dataset.suffix || '';
+            var isDecimal = el.dataset.decimal === 'true';
+            var start = performance.now();
+            var duration = 1800;
+            function step(now) {
+              var t = Math.min((now - start) / duration, 1);
+              var ease = 1 - Math.pow(1 - t, 3);
+              var val = isDecimal
+                ? (target * ease).toFixed(2)
+                : Math.floor(target * ease);
+              el.textContent = val + suffix;
+              if (t < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+          });
+        }
+      }, { threshold: 0.5 });
+      countIO.observe(proofSection);
+    }
+  })();
+  </script>
+
+</body>
+</html>

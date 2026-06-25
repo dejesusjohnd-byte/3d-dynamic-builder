@@ -1,0 +1,158 @@
+{
+  "version": "3.0",
+  "note": "Each entry is a specific micro-interaction pattern, not a vague description. Select by ID in Stage 3. Minimum 3 must be assigned per site.",
+  "interactions": [
+
+    {
+      "id": "hover-magnetic-button",
+      "label": "Magnetic Button",
+      "description": "Button follows cursor with subtle translate offset. Returns to center on mouse leave.",
+      "element": "CTA button, primary action button",
+      "trigger": "mousemove within proximity radius",
+      "css_js": "JS: track cursor delta → apply transform: translate(x*0.3, y*0.3)",
+      "matches_adjectives": ["premium", "playful", "cinematic", "bold"],
+      "avoid_if": ["accessibility-critical", "mobile-only"]
+    },
+    {
+      "id": "hover-text-scramble",
+      "label": "Text Scramble on Hover",
+      "description": "Nav items or headlines scramble through random characters before resolving to the real text.",
+      "element": "Navigation links, section headlines",
+      "trigger": "mouseenter",
+      "css_js": "JS: interval replaces chars with random glyphs, settles to original over 300ms",
+      "matches_adjectives": ["raw", "tech", "industrial", "cyberpunk", "editorial"],
+      "avoid_if": ["warm", "organic", "family", "luxury-soft"]
+    },
+    {
+      "id": "hover-reveal-behind",
+      "label": "Reveal Behind on Hover",
+      "description": "Card or block clips to reveal different content behind it on hover — not just a color swap.",
+      "element": "Cards, project tiles, team members",
+      "trigger": "mouseenter",
+      "css_js": "clip-path transition from edge to full reveal, or overflow hidden translate",
+      "matches_adjectives": ["editorial", "premium", "sophisticated", "portfolio"],
+      "avoid_if": ["information-dense", "data tables", "lists"]
+    },
+    {
+      "id": "scroll-line-draw",
+      "label": "SVG Line Draw on Scroll",
+      "description": "An SVG path or decorative line draws itself as the section enters the viewport.",
+      "element": "Section dividers, decorative elements, connector lines",
+      "trigger": "scroll-into-view",
+      "css_js": "stroke-dashoffset animation triggered by IntersectionObserver",
+      "matches_adjectives": ["elegant", "architectural", "precise", "editorial"],
+      "avoid_if": ["playful/casual", "heavy texture brands"]
+    },
+    {
+      "id": "scroll-counter-up",
+      "label": "Number Count-Up on Scroll",
+      "description": "Statistics or numbers animate from 0 to their value when scrolled into view.",
+      "element": "Stats sections, social proof numbers",
+      "trigger": "scroll-into-view",
+      "css_js": "JS requestAnimationFrame count loop, easeOut timing",
+      "matches_adjectives": ["confident", "data-driven", "results-oriented"],
+      "avoid_if": ["editorial-only", "abstract brands"]
+    },
+    {
+      "id": "scroll-parallax-text",
+      "label": "Parallax Text Layer",
+      "description": "Text or headline moves at different speed from background on scroll, creating depth.",
+      "element": "Section headlines, large display text",
+      "trigger": "scroll-progress",
+      "css_js": "transform: translateY(scrollY * factor) on headline element",
+      "matches_adjectives": ["cinematic", "immersive", "premium", "bold"],
+      "avoid_if": ["accessibility-critical", "dense content sections"]
+    },
+    {
+      "id": "click-ripple-custom",
+      "label": "Custom Click Ripple",
+      "description": "Click on CTA button creates a custom ripple effect — not the default Material ripple. Can be color, light burst, or particle.",
+      "element": "Primary CTA button",
+      "trigger": "click",
+      "css_js": "JS: spawn absolutely-positioned element at click coords, animate scale + opacity out",
+      "matches_adjectives": ["playful", "energetic", "interactive", "bold"],
+      "avoid_if": ["minimal", "cold/surgical brands"]
+    },
+    {
+      "id": "focus-highlight-ring",
+      "label": "Animated Focus Ring",
+      "description": "Form inputs and buttons get a custom animated focus ring — not the default browser outline. Ring draws in or pulses.",
+      "element": "All interactive elements (a11y required)",
+      "trigger": "focus",
+      "css_js": "outline: none; custom box-shadow or pseudo-element ring animation",
+      "matches_adjectives": ["all"],
+      "avoid_if": [],
+      "note": "Always include this — accessibility. The style varies per brand."
+    },
+    {
+      "id": "hover-underline-expand",
+      "label": "Expanding Underline on Hover",
+      "description": "Link underline grows from 0 width to full on hover. Thickness, color, and speed derived from brand.",
+      "element": "Text links, nav items",
+      "trigger": "mouseenter",
+      "css_js": "pseudo-element ::after with transform: scaleX(0→1), transform-origin: left",
+      "matches_adjectives": ["editorial", "minimal", "elegant"],
+      "avoid_if": ["heavy texture", "dark/moody where underlines don't read"]
+    },
+    {
+      "id": "scroll-image-reveal-clip",
+      "label": "Image Clip-Path Reveal",
+      "description": "Image section is clipped with clip-path: inset(100% 0 0 0) and reveals downward as it enters viewport.",
+      "element": "Images, video stills, full-bleed sections",
+      "trigger": "scroll-into-view",
+      "css_js": "clip-path transition from inset(100%) to inset(0%), 0.8s ease",
+      "matches_adjectives": ["premium", "editorial", "cinematic"],
+      "avoid_if": ["fast-paced", "urgent CTAs"]
+    },
+    {
+      "id": "hover-card-tilt",
+      "label": "3D Tilt on Hover",
+      "description": "Card tilts in 3D space following cursor position. Gives depth and physicality.",
+      "element": "Cards, project tiles, product images",
+      "trigger": "mousemove",
+      "css_js": "perspective + rotateX/rotateY from cursor position delta",
+      "matches_adjectives": ["premium", "tech", "3d", "dimensional"],
+      "avoid_if": ["flat design mandate", "accessibility-critical", "mobile-only"]
+    },
+    {
+      "id": "cursor-custom-follow",
+      "label": "Custom Cursor with Lag Follow",
+      "description": "Replaces default cursor with a branded dot + ring. Ring follows with spring lag. Changes on hover over interactive elements.",
+      "element": "Document-wide",
+      "trigger": "mousemove (persistent)",
+      "css_js": "JS: two elements, one instant, one lerp follow; class toggles on hover targets",
+      "matches_adjectives": ["premium", "editorial", "cinematic", "portfolio", "luxury"],
+      "avoid_if": ["utility sites", "accessibility-critical", "mobile-only"]
+    },
+    {
+      "id": "scroll-sticky-counter",
+      "label": "Sticky Progress Indicator",
+      "description": "A thin line or number at edge of screen shows scroll progress through the page/section.",
+      "element": "Fixed edge element",
+      "trigger": "scroll-progress (persistent)",
+      "css_js": "width or height of line = scrollPercent%; or counter shows section number",
+      "matches_adjectives": ["precise", "editorial", "long-scroll", "storytelling"],
+      "avoid_if": ["short pages", "landing pages with single goal"]
+    },
+    {
+      "id": "hover-color-flood",
+      "label": "Color Flood Fill on Hover",
+      "description": "Hovering a block floods it with color from a point (cursor position), not just a fade.",
+      "element": "Large clickable cards, category blocks",
+      "trigger": "mouseenter",
+      "css_js": "radial-gradient from cursor origin expands to cover element",
+      "matches_adjectives": ["bold", "energetic", "playful", "confident"],
+      "avoid_if": ["minimal", "luxury-restrained", "editorial-cold"]
+    },
+    {
+      "id": "load-stagger-entrance",
+      "label": "Staggered Load Entrance",
+      "description": "On page load, elements appear in sequence with stagger delay — not all at once.",
+      "element": "Nav, hero headline, hero CTA (load sequence)",
+      "trigger": "page load",
+      "css_js": "opacity 0 → 1 + translateY with nth-child delay increments, CSS animation",
+      "matches_adjectives": ["all — this should almost always be present"],
+      "avoid_if": []
+    }
+  ]
+}
