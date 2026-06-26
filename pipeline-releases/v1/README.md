@@ -13,6 +13,18 @@ A pipeline for building premium single-file HTML websites with a scroll-scrubbed
 
 ---
 
+## First-time setup — install the skill
+
+Before opening Claude, install the pipeline skill:
+1. Open Claude (Cowork)
+2. Go to **Settings → Capabilities → Skills**
+3. Click **Install from file** and select `3d-pipeline-builder.skill` from this folder
+4. Restart or open a new chat — the skill is now active
+
+The skill is what makes Claude automatically understand this pipeline and start building without you having to explain anything.
+
+---
+
 ## How to start a new project
 
 ### Step 1 — Get your assets into the project
@@ -53,4 +65,13 @@ pipeline-releases/v1/
 │       │   ├── 3d/
 │       │   └── images/keyframes/
 │       ├── logs/brief.md  ← fill this before prompting Claude
-│       �
+│       └── output/        ← final index.html goes here
+└── Drive Template/        ← how to structure your Google Drive folder
+```
+
+---
+
+## For Claude starting a fresh session
+1. Read `SESSION_INIT.md` — that is your complete build guide
+2. Look inside `projects/` for any folder that has a video in `assets/video/` — that is the active project
+3. If `projects/` only has `sample_project/` and it is empty, ask the user: *"What is your project called, and do you have a Google Drive link or local files?"*
