@@ -1,0 +1,21 @@
+Create a 10–15 second cinematic sequence using the provided start and end frames as keyframes.
+
+The video begins with a wide, distant aerial view of a vast futuristic digital city, glowing with subtle neon accents and layered holographic architecture. The camera is positioned far above the city, emphasizing massive scale, depth, and atmospheric haze.
+
+Over the full 10–15 second duration, execute a slow, continuous cinematic dolly-in / forward aerial glide toward the center of the city. The movement should feel smooth, stable, and physically realistic, with no sudden cuts or jumps.
+
+As the camera progresses, it passes through volumetric fog, drifting light particles, and towering digital structures, gradually revealing more intricate AI systems and glowing data pathways embedded within the environment.
+
+The sequence culminates in the final seconds with a close, dominant view of the central AI headquarters tower, filling most of the frame. The tower should feel monumental and highly detailed, with subtle pulsing light patterns suggesting active artificial intelligence and computation.
+
+Maintain throughout:
+
+
+Strict 10–15 second cinematic pacing
+Seamless interpolation between start and end frames
+Consistent futuristic architectural design
+Strong depth layering and atmospheric perspective
+Smooth, uninterrupted camera motion (no cuts or scene changes)
+High realism with cinematic lighting and volumetric effects
+
+The entire motion should feel like a single continuous “journey into the heart of the AI system.”
