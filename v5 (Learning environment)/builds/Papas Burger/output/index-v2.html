@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Papa's Burger</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
+  <!-- GSAP CDN — must load before engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:     #111418;
+      --accent: #e84a0c;
+      --text:   #f5f0ea;
+      --muted:  #2a2a2a;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body:    'DM Sans', sans-serif;
+    }
+
+    html { scroll-behavior: auto; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── Custom cursor ─────────────────────────────────────────── */
+    #cursor-dot  { width: 6px;  height: 6px;  background: var(--text); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); transition: background 0.2s; }
+    #cursor-ring { width: 32px; height: 32px; border: 1px solid rgba(245,240,234,0.4); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); transition: width 0.3s, height 0.3s, border-color 0.3s; }
+    body:hover #cursor-dot { background: var(--accent); }
+
+    /* ── Hero section — GSAP pins this ────────────────────────── */
+    #hero-section {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    #hero-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ── Progress bar ──────────────────────────────────────────── */
+    #hero-progress-wrap {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: rgba(255,255,255,0.08);
+      z-index: 50;
+    }
+    #hero-progress {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.05s linear;
+    }
+
+    /* ── Navbar ────────────────────────────────────────────────── */
+    #hero-nav {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 40px;
+      transition: background 0.4s, padding 0.4s;
+    }
+    #hero-nav.nav-scrolled {
+      background: rgba(17,20,24,0.85);
+      backdrop-filter: blur(12px);
+      padding: 18px 40px;
+    }
+    .nav-brand-left {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      letter-spacing: 0.12em;
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.25s;
+    }
+    .nav-brand-left:hover { color: var(--accent); }
+    .nav-brand-right {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-cta {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid rgba(245,240,234,0.3);
+      padding: 8px 20px;
+      transition: border-color 0.25s, color 0.25s, background 0.25s;
+    }
+    .nav-cta:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── Scene overlays ────────────────────────────────────────── */
+    .scene-overlay {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0;
+      max-width: 36%;
+      z-index: 30;
+    }
+    .scene-overlay .scene-eyebrow {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      opacity: inherit;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .scene-overlay .scene-headline {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 5vw, 5.5rem);
+      line-height: 0.92;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      display: block;
+      text-shadow: 0 2px 24px rgba(0,0,0,0.5);
+    }
+    .scene-overlay .scene-subhead {
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: rgba(245,240,234,0.7);
+      margin-top: 10px;
+      display: block;
+      letter-spacing: 0.04em;
+    }
+
+    /* Scene positions — from frame log */
+    [data-scene="scene-1"] { top: 8%;    left: 5%; }
+    [data-scene="scene-2"] { top: 12%;   right: 6%; text-align: right; }
+    [data-scene="scene-3"] { top: 6%;    right: 6%; text-align: right; }
+    [data-scene="scene-4"] { top: 10%;   left: 5%; }
+    [data-scene="scene-5"] { bottom: 10%; left: 5%; }
+
+    /* ── Scroll hint ───────────────────────────────────────────── */
+    #hero-scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      font-family: var(--font-body);
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(245,240,234,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    #hero-scroll-hint::after {
+      content: '';
+      display: block;
+      width: 1px;
+      height: 32px;
+      background: linear-gradient(to bottom, rgba(245,240,234,0.4), transparent);
+      animation: scrollPulse 1.8s ease-in-out infinite;
+    }
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.4; transform: scaleY(1); }
+      50%       { opacity: 1;   transform: scaleY(1.2); }
+    }
+
+    /* ── Hero CTA — appears near end of scroll ─────────────────── */
+    #hero-cta {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+    #hero-cta.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #hero-cta a {
+      display: inline-block;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      color: var(--bg);
+      background: var(--accent);
+      padding: 14px 32px;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      transition: color 0.3s;
+    }
+    #hero-cta a::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--text);
+      transform: translateX(-101%);
+      transition: transform 0.35s cubic-bezier(0.77,0,0.18,1);
+    }
+    #hero-cta a:hover::after { transform: translateX(0); }
+    #hero-cta a:hover { color: var(--bg); }
+    #hero-cta a span { position: relative; z-index: 1; }
+
+    /* ── Below fold ────────────────────────────────────────────── */
+    #below-fold { background: var(--bg); }
+
+    /* The Build section */
+    #section-build {
+      padding: 140px 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .build-label {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 48px;
+      display: block;
+    }
+    .build-title {
+      font-family: var(--font-display);
+      font-size: clamp(3.5rem, 7vw, 7rem);
+      line-height: 0.9;
+      letter-spacing: 0.04em;
+      color: var(--text);
+      margin-bottom: 80px;
+    }
+    .ingredient-list {
+      list-style: none;
+      border-top: 1px solid rgba(245,240,234,0.08);
+    }
+    .ingredient-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 24px 0;
+      border-bottom: 1px solid rgba(245,240,234,0.08);
+      cursor: default;
+    }
+    .ingredient-name {
+      font-family: var(--font-display);
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      letter-spacing: 0.06em;
+      color: var(--text);
+      transition: color 0.25s, letter-spacing 0.3s;
+    }
+    .ingredient-item:hover .ingredient-name {
+      color: var(--accent);
+      letter-spacing: 0.12em;
+    }
+    .ingredient-note {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 300;
+      color: rgba(245,240,234,0.35);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.25s;
+    }
+    .ingredient-item:hover .ingredient-note { color: rgba(232,74,12,0.6); }
+
+    /* Order section */
+    #section-order {
+      background: var(--accent);
+      padding: 160px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #section-order::before {
+      content: 'ORDER';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font-display);
+      font-size: 22vw;
+      color: rgba(0,0,0,0.06);
+      pointer-events: none;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .order-tagline {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(17,20,24,0.5);
+      margin-bottom: 24px;
+      display: block;
+    }
+    .order-headline {
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 9vw, 10rem);
+      line-height: 0.88;
+      color: #fff;
+      margin-bottom: 48px;
+      position: relative;
+    }
+    .order-btn {
+      display: inline-block;
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      background: #fff;
+      padding: 18px 56px;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      transition: color 0.35s;
+    }
+    .order-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      transform: translateY(101%);
+      transition: transform 0.35s cubic-bezier(0.77,0,0.18,1);
+    }
+    .order-btn:hover { color: var(--text); }
+    .order-btn:hover::after { transform: translateY(0); }
+    .order-btn span { position: relative; z-index: 1; }
+
+    /* Footer */
+    #footer {
+      padding: 64px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(245,240,234,0.06);
+    }
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      letter-spacing: 0.1em;
+      color: var(--text);
+      transition: color 0.25s;
+    }
+    .footer-brand:hover { color: var(--accent); }
+    .footer-links { display: flex; gap: 32px; list-style: none; }
+    .footer-links a {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(245,240,234,0.35);
+      text-decoration: none;
+      transition: color 0.25s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-family: var(--font-body);
+      font-size: 0.65rem;
+      color: rgba(245,240,234,0.2);
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom cursor -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- ═══════════════════════════════════════════════
+       HERO SECTION — GSAP pins this element
+  ════════════════════════════════════════════════ -->
+  <section id="hero-section">
+
+    <!-- Progress bar -->
+    <div id="hero-progress-wrap">
+      <div id="hero-progress"></div>
+    </div>
+
+    <!-- Video -->
+    <video id="hero-video" muted playsinline preload="auto">
+      <source src="../assets/video/BurgerVideo.mp4" type="video/mp4">
+    </video>
+
+    <!-- Navbar -->
+    <nav id="hero-nav">
+      <a href="#" class="nav-brand-left">PAPA'S</a>
+      <a href="#section-order" class="nav-cta">Order Now</a>
+      <a href="#" class="nav-brand-right">BURGER</a>
+    </nav>
+
+    <!-- Scene 1 — t0.8s — layers floating open -->
+    <div class="scene-overlay" data-scene="scene-1">
+      <span class="scene-eyebrow" data-stagger="0">Crafted fresh</span>
+      <span class="scene-headline" data-stagger="1">PULL IT<br>APART</span>
+      <span class="scene-subhead" data-stagger="2">Every layer, deliberate.</span>
+    </div>
+
+    <!-- Scene 2 — t1.6-2.4s — components spread -->
+    <div class="scene-overlay" data-scene="scene-2">
+      <span class="scene-eyebrow" data-stagger="0">No shortcuts</span>
+      <span class="scene-headline" data-stagger="1">NOTHING<br>HIDDEN</span>
+      <span class="scene-subhead" data-stagger="2">Real ingredients, every time.</span>
+    </div>
+
+    <!-- Scene 3 — t3.2-4.0s — black bg explosion -->
+    <div class="scene-overlay" data-scene="scene-3">
+      <span class="scene-eyebrow" data-stagger="0">The moment</span>
+      <span class="scene-headline" data-stagger="1">THE<br>BURST</span>
+      <span class="scene-subhead" data-stagger="2">Flavor doesn't hold back.</span>
+    </div>
+
+    <!-- Scene 4 — t4.8-5.6s — double stack assembling -->
+    <div class="scene-overlay" data-scene="scene-4">
+      <span class="scene-eyebrow" data-stagger="0">Double patty</span>
+      <span class="scene-headline" data-stagger="1">DOUBLE<br>DOWN</span>
+      <span class="scene-subhead" data-stagger="2">Two patties. Zero compromise.</span>
+    </div>
+
+    <!-- Scene 5 — t6.4-7.3s — finale -->
+    <div class="scene-overlay" data-scene="scene-5">
+      <span class="scene-eyebrow" data-stagger="0">Papa's Burger</span>
+      <span class="scene-headline" data-stagger="1">MAKE IT<br>YOURS</span>
+      <span class="scene-subhead" data-stagger="2">Order now.</span>
+    </div>
+
+    <!-- Scroll hint -->
+    <div id="hero-scroll-hint">Scroll</div>
+
+    <!-- Hero CTA — appears at scroll > 80% -->
+    <div id="hero-cta">
+      <a href="#section-order"><span>ORDER NOW →</span></a>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════════════════════════════
+       BELOW FOLD
+  ════════════════════════════════════════════════ -->
+  <div id="below-fold">
+
+    <!-- The Build -->
+    <section id="section-build">
+      <span class="build-label gsap-reveal">The Build</span>
+      <h2 class="build-title gsap-reveal" data-delay="0.1">EVERY<br>INGREDIENT<br>EARNED.</h2>
+
+      <ul class="ingredient-list">
+        <li class="ingredient-item gsap-reveal" data-delay="0.0">
+          <span class="ingredient-name">Brioche Bun</span>
+          <span class="ingredient-note">Toasted daily</span>
+        </li>
+        <li class="ingredient-item gsap-reveal" data-delay="0.05">
+          <span class="ingredient-name">Double Smash Patty</span>
+          <span class="ingredient-note">100% beef, hand-pressed</span>
+        </li>
+        <li class="ingredient-item gsap-reveal" data-delay="0.1">
+          <span class="ingredient-name">Aged Cheddar</span>
+          <span class="ingredient-note">Melted to order</span>
+        </li>
+        <li class="ingredient-item gsap-reveal" data-delay="0.15">
+          <span class="ingredient-name">Crisp Iceberg</span>
+          <span class="ingredient-note">Never wilted</span>
+        </li>
+        <li class="ingredient-item gsap-reveal" data-delay="0.2">
+          <span class="ingredient-name">Heirloom Tomato</span>
+          <span class="ingredient-note">Sliced thick</span>
+        </li>
+        <li class="ingredient-item gsap-reveal" data-delay="0.25">
+          <span class="ingredient-name">Pickled Red Onion</span>
+          <span class="ingredient-note">House-made</span>
+        </li>
+        <li class="ingredient-item gsap-reveal" data-delay="0.3">
+          <span class="ingredient-name">Papa's Sauce</span>
+          <span class="ingredient-note">The secret</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Order CTA -->
+    <section id="section-order">
+      <span class="order-tagline gsap-reveal">Ready when you are</span>
+      <h2 class="order-headline gsap-reveal" data-delay="0.1">CRAVE<br>DELIVERED.</h2>
+      <a href="#" class="order-btn gsap-reveal" data-delay="0.2"><span>ORDER NOW</span></a>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <a href="#" class="footer-brand">PAPA'S BURGER</a>
+      <ul class="footer-links">
+        <li><a href="#">Menu</a></li>
+        <li><a href="#">Locations</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+      <span class="footer-copy">© 2026 Papa's Burger</span>
+    </footer>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       GSAP CONFIG — must be defined before engine
+  ════════════════════════════════════════════════ -->
+  <script>
+  // Engine: scroll-gsap.js v5.1
+  // Changes from v5.0: snapToScenes added, fadeRange raised 0.09 → 0.18
+  // To roll back to v5.0 behaviour: set snapToScenes: false, fadeRange: 0.09
+  window.GSAP_CONFIG = {
+    videoSrc:      '../assets/video/BurgerVideo.mp4',
+    scrollBudget:  '350%',
+    scrubSmooth:   1,
+    fadeRange:     0.18,       // v5.1: raised from 0.09 — text visible ~2x longer per scene
+
+    // [v5.1] Scroll snap — holds video frame at each scene anchor so text can be read
+    snapToScenes:  true,
+    snapDelay:     0.25,       // seconds before snap engages after scroll stops
+
+    // Non-linear video map — manually set from visual analysis
+    // NOTE: run setup.py to generate logs/motion_profile.json for data-driven anchors
+    // Slow elegant opening (t0–t2.4s) → 40% of scroll budget
+    // Fast explosion cut (t3.2–t4.0s) → 10% of scroll budget
+    // Assembly finale (t4.8–t8.1s) → wide budget for payoff
+    videoMap: [
+      { scroll: 0.00, time: 0.0, label: 'intro'        },
+      { scroll: 0.20, time: 0.8, label: 'layers-open'  },
+      { scroll: 0.40, time: 2.4, label: 'components'   },
+      { scroll: 0.55, time: 3.2, label: 'explosion'    },
+      { scroll: 0.65, time: 4.0, label: 'burst-peak'   },
+      { scroll: 0.75, time: 4.8, label: 'assembly'     },
+      { scroll: 0.88, time: 6.4, label: 'double-stack' },
+      { scroll: 1.00, time: 8.1, label: 'finale'       }
+    ],
+
+    scenes: [
+      { id: 'scene-1', scroll: 0.10 },
+      { id: 'scene-2', scroll: 0.30 },
+      { id: 'scene-3', scroll: 0.52 },
+      { id: 'scene-4', scroll: 0.72 },
+      { id: 'scene-5', scroll: 0.88 }
+    ]
+  };
+  </script>
+
+  <!-- ENGINE START — scroll-gsap.js v5.1 -->
+  <!-- DO NOT MODIFY — copy verbatim between ENGINE START / ENGINE END -->
+  <!-- Requires: GSAP + ScrollTrigger loaded before this script -->
+  <!-- Config:   window.GSAP_CONFIG defined before this script -->
+  <!-- Changelog: engine/CHANGELOG.md -->
+  <script>
+  (function () {
+    'use strict';
+
+    const cfg = window.GSAP_CONFIG;
+    if (!cfg) { console.error('[scroll-gsap] window.GSAP_CONFIG not found'); return; }
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const video       = document.getElementById('hero-video');
+    const heroSection = document.getElementById('hero-section');
+    const progressBar = document.getElementById('hero-progress');
+    const scrollHint  = document.getElementById('hero-scroll-hint');
+
+    // ── Chrome autoplay unlock ─────────────────────────────────────────────
+    if (video) {
+      video.addEventListener('loadedmetadata', () => {
+        video.play().then(() => video.pause()).catch(() => {});
+      });
+    }
+
+    // ── videoMap interpolation ─────────────────────────────────────────────
+    function mapToVideoTime(progress) {
+      const map = cfg.videoMap;
+      if (!map || !map.length) return 0;
+      if (progress <= map[0].scroll) return map[0].time;
+      if (progress >= map[map.length - 1].scroll) return map[map.length - 1].time;
+      for (let i = 0; i < map.length - 1; i++) {
+        const a = map[i], b = map[i + 1];
+        if (progress >= a.scroll && progress <= b.scroll) {
+          const t = (progress - a.scroll) / (b.scroll - a.scroll);
+          return a.time + t * (b.time - a.time);
+        }
+      }
+      return 0;
+    }
+
+    // ── Scene text rendering ───────────────────────────────────────────────
+    function updateScenes(progress) {
+      const fadeRange = cfg.fadeRange || 0.18;
+      (cfg.scenes || []).forEach(scene => {
+        const el = document.querySelector(`[data-scene="${scene.id}"]`);
+        if (!el) return;
+        const dist    = Math.abs(progress - scene.scroll);
+        const opacity = Math.max(0, 1 - dist / fadeRange);
+        el.style.opacity = opacity;
+
+        const children = el.querySelectorAll('[data-stagger]');
+        children.forEach(child => {
+          const lag     = parseFloat(child.dataset.stagger || 0) * 0.015;
+          const delayed = Math.max(0, progress - lag);
+          const dist2   = Math.abs(delayed - scene.scroll);
+          child.style.opacity = Math.max(0, 1 - dist2 / fadeRange);
+        });
+      });
+    }
+
+    // ── Build snap points [v5.1] ───────────────────────────────────────────
+    function buildSnapPoints() {
+      if (!cfg.snapToScenes) return false;
+      const points = [0, ...(cfg.scenes || []).map(s => s.scroll), 1];
+      return {
+        snapTo:   points,
+        duration: { min: 0.15, max: 0.6 },
+        delay:    cfg.snapDelay !== undefined ? cfg.snapDelay : 0.3,
+        ease:     'power2.inOut'
+      };
+    }
+
+    // ── Hero ScrollTrigger — pinned ────────────────────────────────────────
+    ScrollTrigger.create({
+      trigger:  heroSection,
+      start:    'top top',
+      end:      `+=${cfg.scrollBudget || '300%'}`,
+      pin:      true,
+      scrub:    cfg.scrubSmooth !== undefined ? cfg.scrubSmooth : 1,
+      snap:     buildSnapPoints(),
+      onUpdate: (self) => {
+        if (video) video.currentTime = mapToVideoTime(self.progress);
+        updateScenes(self.progress);
+        if (progressBar) progressBar.style.width = (self.progress * 100) + '%';
+        if (scrollHint)  scrollHint.style.opacity = self.progress < 0.04 ? 1 : 0;
+      }
+    });
+
+    // ── Below-fold reveals ─────────────────────────────────────────────────
+    document.querySelectorAll('.gsap-reveal').forEach(el => {
+      const delay = parseFloat(el.dataset.delay || 0);
+      gsap.fromTo(el,
+        { opacity: 0, y: 60 },
+        {
+          opacity:  1,
+          y:        0,
+          duration: 1,
+          delay:    delay,
+          ease:     'power2.out',
+          scrollTrigger: {
+            trigger:       el,
+            start:         'top 85%',
+            toggleActions: 'play none none reverse'
+          }
+        }
+      );
+    });
+
+    // ── Navbar scroll behavior ─────────────────────────────────────────────
+    const nav = document.getElementById('hero-nav');
+    if (nav) {
+      ScrollTrigger.create({
+        trigger:  heroSection,
+        start:    'top top',
+        end:      `+=${cfg.scrollBudget || '300%'}`,
+        onUpdate: (self) => {
+          nav.classList.toggle('nav-scrolled', self.progress > 0.05);
+        }
+      });
+    }
+
+  })();
+  </script>
+  <!-- ENGINE END — scroll-gsap.js v5.1 -->
+
+  <!-- ═══════════════════════════════════════════════
+       ADDITIONAL INTERACTIONS
+  ════════════════════════════════════════════════ -->
+  <script>
+  (function() {
+
+    // ── Custom cursor ──────────────────────────────
+    const dot  = document.getElementById('cursor-dot');
+    const ring = document.getElementById('cursor-ring');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+    (function animateCursor() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      dot.style.left  = mx + 'px';
+      dot.style.top   = my + 'px';
+      ring.style.left = rx + 'px';
+      ring.style.top  = ry + 'px';
+      requestAnimationFrame(animateCursor);
+    })();
+
+    document.querySelectorAll('a, button, .ingredient-item').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        ring.style.width  = '56px';
+        ring.style.height = '56px';
+        ring.style.borderColor = 'rgba(232,74,12,0.6)';
+      });
+      el.addEventListener('mouseleave', () => {
+        ring.style.width  = '32px';
+        ring.style.height = '32px';
+        ring.style.borderColor = 'rgba(245,240,234,0.4)';
+      });
+    });
+
+    // ── Hero CTA visibility ───────────────────────
+    const heroCta = document.getElementById('hero-cta');
+    ScrollTrigger.create({
+      trigger: document.getElementById('hero-section'),
+      start:   'top top',
+      end:     '+=350%',
+      onUpdate: (self) => {
+        if (heroCta) heroCta.classList.toggle('visible', self.progress >= 0.78);
+      }
+    });
+
+    // ── Ingredient hover — GSAP translateX ────────
+    document.querySelectorAll('.ingredient-item').forEach(item => {
+      item.addEventListener('mouseenter', () => {
+        gsap.to(item.querySelector('.ingredient-name'), { x: 12, duration: 0.3, ease: 'power2.out' });
+      });
+      item.addEventListener('mouseleave', () => {
+        gsap.to(item.querySelector('.ingredient-name'), { x: 0, duration: 0.3, ease: 'power2.out' });
+      });
+    });
+
+    // ── Nav link hover — letter-spacing expand ─────
+    document.querySelectorAll('.nav-brand-left, .footer-brand').forEach(el => {
+      el.addEventListener('mouseenter', () => gsap.to(el, { letterSpacing: '0.22em', duration: 0.3 }));
+      el.addEventListener('mouseleave', () => gsap.to(el, { letterSpacing: el.classList.contains('footer-brand') ? '0.1em' : '0.12em', duration: 0.3 }));
+    });
+
+    // ── Order headline — scale on scroll entry ─────
+    gsap.fromTo('#section-order .order-headline',
+      { scale: 0.92, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out',
+        scrollTrigger: { trigger: '#section-order', start: 'top 70%' }
+      }
+    );
+
+  })();
+  </script>
+
+</body>
+</html>

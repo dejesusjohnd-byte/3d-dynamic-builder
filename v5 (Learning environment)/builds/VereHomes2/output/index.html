@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VeraHomes — Luxury Real Estate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: #0a0806; color: #f5efe6; font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+
+    :root {
+      --gold:      #c8a96a;
+      --cream:     #f5efe6;
+      --dark:      #0a0806;
+      --muted:     rgba(245,239,230,0.55);
+      --serif:     'Cormorant Garamond', Georgia, serif;
+      --sans:      'DM Sans', sans-serif;
+      --loader-bg: #f2ede6;
+    }
+
+    /* ── HERO ── */
+    #hero-section {
+      position: relative; width: 100%; height: 100vh;
+      overflow: hidden; background: var(--dark);
+    }
+    #hero-canvas {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      display: block; opacity: 0;
+    }
+    #hero-video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0; pointer-events: none;
+    }
+    .hero-vignette {
+      position: absolute; inset: 0; pointer-events: none; z-index: 2;
+      background:
+        linear-gradient(to top,    rgba(10,8,6,0.78) 0%, transparent 45%),
+        linear-gradient(to right,  rgba(10,8,6,0.50) 0%, transparent 55%),
+        linear-gradient(to bottom, rgba(10,8,6,0.55) 0%, transparent 32%);
+    }
+
+    /* ── LOADER ── */
+    #hero-frame-loader {
+      position: absolute; inset: 0; z-index: 60;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--loader-bg); gap: 24px;
+    }
+    .loader-wordmark {
+      font-family: var(--serif); font-size: 1.05rem; font-weight: 300;
+      letter-spacing: 0.35em; color: #1a1714; text-transform: uppercase;
+    }
+    .loader-pct {
+      font-family: var(--serif); font-size: 5rem; font-weight: 300;
+      color: #1a1714; line-height: 1; letter-spacing: -0.02em;
+    }
+    .loader-bar-wrap {
+      width: 200px; height: 1px; background: rgba(26,23,20,0.12);
+      position: relative; overflow: hidden;
+    }
+    .loader-bar-fill {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      background: var(--gold); width: var(--pct, 0%); transition: width 0.08s linear;
+    }
+
+    /* ── NAV ── */
+    #hero-nav {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 32px 52px; transition: background 0.4s, padding 0.4s;
+    }
+    #hero-nav.nav-scrolled {
+      background: rgba(10,8,6,0.75); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px); padding: 20px 52px;
+    }
+    .nav-logo {
+      font-family: var(--serif); font-size: 1.35rem; font-weight: 400;
+      letter-spacing: 0.08em; color: var(--cream); text-decoration: none;
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-links { display: flex; gap: 44px; list-style: none; }
+    .nav-links a {
+      font-family: var(--sans); font-size: 0.75rem; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--cream); }
+    .nav-cta {
+      font-family: var(--sans); font-size: 0.75rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--dark); background: var(--gold);
+      padding: 11px 26px; text-decoration: none; transition: opacity 0.2s;
+    }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* ── SCROLL HINT ── */
+    #hero-scroll-hint {
+      position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
+      z-index: 10; display: flex; flex-direction: column; align-items: center;
+      gap: 10px; transition: opacity 0.4s;
+    }
+    .scroll-hint-text {
+      font-family: var(--sans); font-size: 0.62rem; letter-spacing: 0.28em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .scroll-hint-line {
+      width: 1px; height: 44px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.35; transform: scaleY(1); }
+      50%       { opacity: 1;   transform: scaleY(1.15); }
+    }
+
+    /* ── PROGRESS ── */
+    #hero-progress {
+      position: absolute; bottom: 0; left: 0; height: 1px;
+      background: var(--gold); width: 0%; z-index: 30; opacity: 0.55;
+    }
+
+    /* ── SCENES ── */
+    .scene-overlay {
+      position: absolute; z-index: 10; pointer-events: none; opacity: 0;
+    }
+    #scene-1-overlay { bottom: 9%; left: 6%; max-width: 580px; }
+    #scene-2-overlay {
+      top: 50%; right: 6%; transform: translateY(-50%);
+      max-width: 440px; text-align: right;
+    }
+    #scene-3-overlay {
+      bottom: 9%; left: 50%; transform: translateX(-50%);
+      width: 560px; text-align: center;
+    }
+    .scene-label {
+      display: block; font-family: var(--sans); font-size: 0.65rem;
+      letter-spacing: 0.30em; text-transform: uppercase; color: var(--gold); margin-bottom: 18px;
+    }
+    .scene-rule {
+      display: block; width: 40px; height: 1px; background: var(--gold); margin-bottom: 22px;
+    }
+    .scene-rule-right { margin-left: auto; margin-right: 0; }
+    .scene-headline {
+      font-family: var(--serif); font-weight: 300; color: var(--cream);
+      line-height: 1.08; letter-spacing: -0.01em;
+    }
+    .scene-headline em { font-style: italic; color: var(--gold); }
+    #scene-1-overlay .scene-headline { font-size: clamp(3rem, 5.5vw, 5rem); }
+    #scene-2-overlay .scene-headline { font-size: clamp(2.2rem, 4vw, 3.6rem); }
+    #scene-3-overlay .scene-headline { font-size: clamp(2.4rem, 4.5vw, 4rem); }
+    .scene-sub {
+      font-family: var(--sans); font-weight: 300; font-size: 0.80rem;
+      color: var(--muted); line-height: 1.75; margin-top: 18px; letter-spacing: 0.02em;
+    }
+    .scene-cta-row {
+      display: flex; gap: 14px; justify-content: center;
+      margin-top: 34px; pointer-events: auto;
+    }
+    .scene-btn {
+      font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.18em;
+      text-transform: uppercase; text-decoration: none; padding: 14px 44px; transition: all 0.2s;
+    }
+    .scene-btn-primary { background: var(--gold); color: var(--dark); }
+    .scene-btn-primary:hover { opacity: 0.87; }
+    .scene-btn-secondary { border: 1px solid rgba(245,239,230,0.32); color: var(--cream); }
+    .scene-btn-secondary:hover { border-color: var(--cream); }
+
+    /* ── BELOW FOLD ── */
+    .gsap-reveal { opacity: 0; }
+
+    .section-intro {
+      padding: 120px 6% 100px; display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: end; border-bottom: 1px solid rgba(245,239,230,0.06);
+    }
+    .intro-stat-label {
+      display: block; font-family: var(--sans); font-size: 0.68rem;
+      letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px;
+    }
+    .intro-stat-number {
+      font-family: var(--serif); font-size: clamp(4.5rem, 8vw, 7.5rem);
+      font-weight: 300; color: var(--cream); line-height: 0.9; letter-spacing: -0.02em;
+    }
+    .intro-stat-number sup { font-size: 0.45em; color: var(--gold); vertical-align: super; }
+    .intro-stat-detail {
+      font-family: var(--sans); font-size: 0.80rem; color: var(--muted);
+      margin-top: 24px; line-height: 1.85;
+    }
+    .intro-body p {
+      font-family: var(--serif); font-size: clamp(1.3rem, 2vw, 1.65rem); font-weight: 300;
+      font-style: italic; color: var(--cream); line-height: 1.6; margin-bottom: 28px;
+    }
+    .intro-body-sub {
+      font-family: var(--sans); font-size: 0.83rem; line-height: 1.88; color: var(--muted);
+    }
+
+    .section-collection { padding: 100px 6%; border-bottom: 1px solid rgba(245,239,230,0.06); }
+    .section-eyebrow {
+      font-family: var(--sans); font-size: 0.65rem; letter-spacing: 0.30em;
+      text-transform: uppercase; color: var(--gold); display: flex; align-items: center;
+      gap: 20px; margin-bottom: 60px;
+    }
+    .section-eyebrow::after { content: ''; flex: 1; height: 1px; background: rgba(245,239,230,0.08); }
+    .collection-list { list-style: none; }
+    .collection-item {
+      display: grid; grid-template-columns: 72px 1fr auto; align-items: center;
+      gap: 36px; padding: 36px 0; border-bottom: 1px solid rgba(245,239,230,0.06);
+      transition: all 0.3s; cursor: default;
+    }
+    .collection-item:hover .collection-name { color: var(--gold); }
+    .collection-item:hover .collection-arrow { opacity: 1; transform: translateX(0); }
+    .collection-num {
+      font-family: var(--serif); font-size: 0.78rem; letter-spacing: 0.1em;
+      color: rgba(200,169,106,0.40); align-self: start; padding-top: 6px;
+    }
+    .collection-name {
+      font-family: var(--serif); font-size: clamp(1.8rem, 3vw, 2.8rem);
+      font-weight: 300; color: var(--cream); line-height: 1.1; transition: color 0.3s;
+    }
+    .collection-desc { font-family: var(--sans); font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+    .collection-arrow {
+      font-family: var(--sans); font-size: 0.70rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--gold); opacity: 0;
+      transform: translateX(-14px); transition: all 0.3s;
+    }
+
+    .section-qualities { padding: 100px 6%; border-bottom: 1px solid rgba(245,239,230,0.06); }
+    .qualities-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 64px; margin-top: 64px; }
+    .quality-rule { display: block; width: 30px; height: 1px; background: var(--gold); margin-bottom: 30px; }
+    .quality-title {
+      font-family: var(--serif); font-size: clamp(1.5rem, 2.2vw, 2.1rem); font-weight: 300;
+      color: var(--cream); line-height: 1.2; margin-bottom: 20px;
+    }
+    .quality-body { font-family: var(--sans); font-size: 0.82rem; line-height: 1.88; color: var(--muted); }
+
+    .section-stats {
+      padding: 80px 6%; display: grid; grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid rgba(245,239,230,0.06);
+    }
+    .stat-block { padding: 0 48px 0 0; border-right: 1px solid rgba(245,239,230,0.06); }
+    .stat-block:first-child { padding-left: 0; }
+    .stat-block:last-child  { border-right: none; }
+    .stat-block + .stat-block { padding-left: 48px; }
+    .stat-number {
+      font-family: var(--serif); font-size: clamp(2.2rem, 3.5vw, 3.4rem); font-weight: 300;
+      color: var(--cream); line-height: 1; margin-bottom: 10px;
+    }
+    .stat-suffix { color: var(--gold); }
+    .stat-label {
+      font-family: var(--sans); font-size: 0.70rem; letter-spacing: 0.16em;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    .section-cta { padding: 140px 6% 120px; text-align: center; }
+    .cta-eyebrow {
+      display: block; font-family: var(--sans); font-size: 0.65rem;
+      letter-spacing: 0.30em; text-transform: uppercase; color: var(--gold); margin-bottom: 40px;
+    }
+    .cta-headline {
+      font-family: var(--serif); font-size: clamp(2.8rem, 5vw, 5rem); font-weight: 300;
+      color: var(--cream); line-height: 1.1; margin-bottom: 24px;
+    }
+    .cta-headline em { font-style: italic; color: var(--gold); }
+    .cta-sub {
+      font-family: var(--sans); font-size: 0.84rem; color: var(--muted);
+      max-width: 420px; margin: 0 auto 52px; line-height: 1.82;
+    }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; }
+    .btn {
+      font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.18em;
+      text-transform: uppercase; text-decoration: none; padding: 16px 52px; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--gold); color: var(--dark); }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-outline { border: 1px solid rgba(245,239,230,0.25); color: var(--cream); }
+    .btn-outline:hover { border-color: var(--cream); }
+
+    footer {
+      padding: 40px 6%; border-top: 1px solid rgba(245,239,230,0.06);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .footer-logo { font-family: var(--serif); font-size: 0.95rem; letter-spacing: 0.08em; color: rgba(245,239,230,0.35); }
+    .footer-copy { font-family: var(--sans); font-size: 0.70rem; color: rgba(245,239,230,0.20); letter-spacing: 0.04em; }
+    .footer-links { display: flex; gap: 28px; list-style: none; }
+    .footer-links a {
+      font-family: var(--sans); font-size: 0.70rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(245,239,230,0.28); text-decoration: none; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--cream); }
+  </style>
+</head>
+<body>
+
+<section id="hero-section">
+
+  <div id="hero-frame-loader">
+    <span class="loader-wordmark">VeraHomes</span>
+    <span class="loader-pct">0%</span>
+    <div class="loader-bar-wrap"><div class="loader-bar-fill"></div></div>
+  </div>
+
+  <canvas id="hero-canvas"></canvas>
+
+  <video id="hero-video" muted playsinline preload="none"
+         src="../assets/video/HouseArchitectureShort.mp4"></video>
+
+  <div class="hero-vignette"></div>
+
+  <nav id="hero-nav">
+    <a href="#" class="nav-logo">Vera<span>Homes</span></a>
+    <ul class="nav-links">
+      <li><a href="#">Properties</a></li>
+      <li><a href="#">Locations</a></li>
+      <li><a href="#">About</a></li>
+    </ul>
+    <a href="#" class="nav-cta">Book a Viewing</a>
+  </nav>
+
+  <div class="scene-overlay" data-scene="scene-1" id="scene-1-overlay">
+    <span class="scene-label" data-stagger="0">Estate · MMXXIV</span>
+    <span class="scene-rule" data-stagger="1"></span>
+    <h1 class="scene-headline" data-stagger="2">A home is not<br>a house. It is<br>a feeling.</h1>
+  </div>
+
+  <div class="scene-overlay" data-scene="scene-2" id="scene-2-overlay">
+    <span class="scene-label" data-stagger="0">Curated Living</span>
+    <span class="scene-rule scene-rule-right" data-stagger="1"></span>
+    <h2 class="scene-headline" data-stagger="2">Designed<br>for the way<br>you live.</h2>
+    <p class="scene-sub" data-stagger="4">Every property. Every detail.<br>Every moment — considered.</p>
+  </div>
+
+  <div class="scene-overlay" data-scene="scene-3" id="scene-3-overlay">
+    <span class="scene-label" data-stagger="0">Your Next Chapter</span>
+    <h2 class="scene-headline" data-stagger="2">Find where<br><em>you belong.</em></h2>
+    <div class="scene-cta-row" data-stagger="5">
+      <a href="#" class="scene-btn scene-btn-primary">Buy</a>
+      <a href="#" class="scene-btn scene-btn-secondary">Rent</a>
+    </div>
+  </div>
+
+  <div id="hero-scroll-hint">
+    <span class="scroll-hint-text">Scroll</span>
+    <div class="scroll-hint-line"></div>
+  </div>
+
+  <div id="hero-progress"></div>
+
+</section>
+
+<section class="section-intro gsap-reveal">
+  <div>
+    <span class="intro-stat-label">Properties Worldwide</span>
+    <div class="intro-stat-number">147<sup>+</sup></div>
+    <p class="intro-stat-detail">Across 12 cities — each property selected<br>not just for location, but for the life it enables.</p>
+  </div>
+  <div class="intro-body">
+    <p>We believe a home should move you before you move in.</p>
+    <div class="intro-body-sub">VeraHomes curates luxury residential properties that combine architectural excellence with a warmth that cannot be manufactured. From penthouse residences to secluded villas, each listing is chosen to offer something rarer than square footage: a sense of belonging.</div>
+  </div>
+</section>
+
+<section class="section-collection gsap-reveal" data-delay="0.1">
+  <div class="section-eyebrow">Our Collection</div>
+  <ul class="collection-list">
+    <li class="collection-item">
+      <span class="collection-num">01 ·</span>
+      <div><div class="collection-name">Penthouse Residences</div><div class="collection-desc">Above the city. At the centre of it all.</div></div>
+      <span class="collection-arrow">View &rarr;</span>
+    </li>
+    <li class="collection-item">
+      <span class="collection-num">02 ·</span>
+      <div><div class="collection-name">Garden Villas</div><div class="collection-desc">Where landscape and architecture become one.</div></div>
+      <span class="collection-arrow">View &rarr;</span>
+    </li>
+    <li class="collection-item">
+      <span class="collection-num">03 ·</span>
+      <div><div class="collection-name">City Apartments</div><div class="collection-desc">Designed for the pace you keep.</div></div>
+      <span class="collection-arrow">View &rarr;</span>
+    </li>
+  </ul>
+</section>
+
+<section class="section-qualities gsap-reveal" data-delay="0.1">
+  <div class="section-eyebrow">The VeraHomes Difference</div>
+  <div class="qualities-grid">
+    <div><span class="quality-rule"></span><h3 class="quality-title">Timeless Design</h3><p class="quality-body">We partner exclusively with architects whose work endures — not what is trending, but what is lasting.</p></div>
+    <div><span class="quality-rule"></span><h3 class="quality-title">Prime Locations</h3><p class="quality-body">Each property placed where convenience and escape coexist — near everything, yet removed from the noise.</p></div>
+    <div><span class="quality-rule"></span><h3 class="quality-title">White-Glove Service</h3><p class="quality-body">From first viewing to final key, your dedicated advisor manages every detail so you never have to.</p></div>
+  </div>
+</section>
+
+<div class="section-stats gsap-reveal" data-delay="0.15">
+  <div class="stat-block"><div class="stat-number">147<span class="stat-suffix">+</span></div><div class="stat-label">Properties Listed</div></div>
+  <div class="stat-block"><div class="stat-number">12</div><div class="stat-label">Cities</div></div>
+  <div class="stat-block"><div class="stat-number">98<span class="stat-suffix">%</span></div><div class="stat-label">Client Satisfaction</div></div>
+  <div class="stat-block"><div class="stat-number">20</div><div class="stat-label">Years of Excellence</div></div>
+</div>
+
+<section class="section-cta gsap-reveal" data-delay="0.1">
+  <span class="cta-eyebrow">Begin Your Search</span>
+  <h2 class="cta-headline">Ready to find<br>where you <em>belong?</em></h2>
+  <p class="cta-sub">VeraHomes advisors are available to guide your search — from first impression to signed agreement.</p>
+  <div class="cta-buttons">
+    <a href="#" class="btn btn-primary">Buy a Home</a>
+    <a href="#" class="btn btn-outline">Rent a Property</a>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-logo">VeraHomes</span>
+  <span class="footer-copy">&copy; 2024 VeraHomes. All rights reserved.</span>
+  <ul class="footer-links">
+    <li><a href="#">Privacy</a></li>
+    <li><a href="#">Terms</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+</footer>
+
+<!-- CONFIG -->
+<script>
+window.GSAP_CONFIG = {
+  frameSrc:          '../assets/images/frames/',
+  frameCount:        361,
+  fps:               24,
+  videoSrc:          '../assets/video/HouseArchitectureShort.mp4',
+  scrollBudget:      '420%',
+  fadeRange:         0.14,
+  approachTolerance: 0.030,
+  dwellTime:         5.0,
+  snapToScenes:      true,
+  snapDelay:         0.20,
+  waypoints:         [0.38, 0.68],
+  videoMap: [
+    { scroll: 0.00, time:  0.0 },
+    { scroll: 0.18, time:  2.7 },
+    { scroll: 0.35, time:  5.3 },
+    { scroll: 0.50, time:  7.5 },
+    { scroll: 0.65, time:  9.8 },
+    { scroll: 0.78, time: 11.7 },
+    { scroll: 0.90, time: 13.5 },
+    { scroll: 1.00, time: 15.0 }
+  ],
+  scenes: [
+    { id: 'scene-1', scroll: 0.18 },
+    { id: 'scene-2', scroll: 0.60 },
+    { id: 'scene-3', scroll: 0.88 }
+  ]
+};
+</script>
+
+<!-- Loader observer — rebuilds children each time engine wipes them with textContent -->
+<script>
+(function () {
+  var loader   = document.getElementById('hero-frame-loader');
+  if (!loader) return;
+  var wordmark = loader.querySelector('.loader-wordmark');
+  var pctEl    = loader.querySelector('.loader-pct');
+  var barWrap  = loader.querySelector('.loader-bar-wrap');
+  var obs = new MutationObserver(function () {
+    var raw = loader.textContent.trim();
+    var match = raw.match(/^(\d+)%$/);
+    if (match) {
+      obs.disconnect();
+      loader.textContent = '';
+      loader.appendChild(wordmark);
+      loader.appendChild(pctEl);
+      loader.appendChild(barWrap);
+      pctEl.textContent = match[1] + '%';
+      loader.style.setProperty('--pct', match[1] + '%');
+      obs.observe(loader, { childList: true, subtree: true, characterData: true });
+    } else {
+      var m = loader.textContent.match(/(\d+)%/);
+      if (m && pctEl) { pctEl.textContent = m[1] + '%'; loader.style.setProperty('--pct', m[1] + '%'); }
+    }
+  });
+  obs.observe(loader, { childList: true, subtree: true, characterData: true });
+})();
+</script>
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<!-- ENGINE v5.2.5 — inlined -->
+<script>
+(function () {
+  'use strict';
+  var cfg = window.GSAP_CONFIG;
+  if (!cfg) { console.error('[scroll-gsap] GSAP_CONFIG missing'); return; }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  var detectedVideoDuration = null;
+  if (cfg.videoSrc) {
+    var probe = document.createElement('video');
+    probe.preload = 'metadata'; probe.muted = true; probe.src = cfg.videoSrc;
+    probe.addEventListener('loadedmetadata', function () {
+      detectedVideoDuration = probe.duration;
+      probe.removeAttribute('src'); probe.load();
+    }, { once: true });
+  }
+
+  var heroSection = document.getElementById('hero-section');
+  var progressBar = document.getElementById('hero-progress');
+  var scrollHint  = document.getElementById('hero-scroll-hint');
+  var nav         = document.getElementById('hero-nav');
+
+  var useFrames  = !!(cfg.frameSrc && cfg.frameCount);
+  var canvas, ctx, frames = [], framesLoaded = 0;
+  var video;
+  var st = null;
+  var snapInProgress = false, snapDestProgress = null;
+
+  function preloadFrames(onReady) {
+    canvas = document.getElementById('hero-canvas');
+    ctx    = canvas ? canvas.getContext('2d') : null;
+    var loader = document.getElementById('hero-frame-loader');
+    if (!canvas || !ctx) { initVideoFallback(onReady); return; }
+    canvas.style.opacity = '0';
+    function resize() { canvas.width = heroSection.offsetWidth; canvas.height = heroSection.offsetHeight; }
+    resize();
+    window.addEventListener('resize', function () { resize(); if (st && !snapInProgress) drawFrame(st.progress); });
+    var total = cfg.frameCount;
+    var pad   = String(total).length;
+    var ext   = cfg.frameExt || 'jpg';
+    for (var i = 1; i <= total; i++) {
+      (function (idx) {
+        var img = new Image();
+        img.src = cfg.frameSrc + 'frame_' + String(idx).padStart(pad, '0') + '.' + ext;
+        img.onload = function () {
+          framesLoaded++;
+          if (loader) {
+            var pct = Math.round(framesLoaded / total * 100);
+            loader.textContent = pct + '%';
+            loader.style.setProperty('--pct', pct + '%');
+          }
+          if (framesLoaded === total) {
+            if (loader) {
+              gsap.to(loader, { opacity: 0, duration: 0.4, onComplete: function () {
+                loader.style.display = 'none';
+                gsap.to(canvas, { opacity: 1, duration: 0.4 });
+              }});
+            } else {
+              gsap.to(canvas, { opacity: 1, duration: 0.3 });
+            }
+            onReady();
+          }
+        };
+        img.onerror = function () { framesLoaded++; if (framesLoaded === total) onReady(); };
+        frames.push(img);
+      })(i);
+    }
+  }
+
+  function drawFrame(progress) {
+    if (!ctx || !frames.length) return;
+    var idx = Math.min(frames.length - 1, Math.round(progress * (frames.length - 1)));
+    var f   = frames[idx];
+    if (f && f.complete && f.naturalWidth) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      var vR = f.naturalWidth / f.naturalHeight;
+      var cR = canvas.width   / canvas.height;
+      var sw, sh, sx, sy;
+      if (vR > cR) { sh = canvas.height; sw = sh * vR; sx = (canvas.width - sw) / 2; sy = 0; }
+      else         { sw = canvas.width;  sh = sw / vR; sx = 0; sy = (canvas.height - sh) / 2; }
+      ctx.drawImage(f, sx, sy, sw, sh);
+    }
+  }
+
+  function initVideoFallback(onReady) {
+    video = document.getElementById('hero-video');
+    if (video) {
+      video.addEventListener('loadedmetadata', function () { video.play().then(function () { video.pause(); }).catch(function () {}); onReady(); });
+      if (video.readyState >= 1) onReady();
+    } else { onReady(); }
+  }
+
+  function mapToVideoTime(progress) {
+    var map = cfg.videoMap;
+    if (!map || !map.length) return 0;
+    if (progress <= map[0].scroll) return map[0].time;
+    var last = map[map.length - 1];
+    if (progress >= last.scroll) {
+      var fullDuration = detectedVideoDuration || cfg.videoDuration || last.time;
+      if (fullDuration > last.time && last.scroll < 1) {
+        var t = (progress - last.scroll) / (1 - last.scroll);
+        return last.time + t * (fullDuration - last.time);
+      }
+      return fullDuration;
+    }
+    for (var i = 0; i < map.length - 1; i++) {
+      var a = map[i], b = map[i + 1];
+      if (progress >= a.scroll && progress <= b.scroll) {
+        var t2 = (progress - a.scroll) / (b.scroll - a.scroll);
+        return a.time + t2 * (b.time - a.time);
+      }
+    }
+    return 0;
+  }
+
+  var dwellState   = {};
+  var dwellSeconds = cfg.dwellTime !== undefined ? cfg.dwellTime : 4.0;
+
+  function onSnapEngaged(progress) {
+    if (progress === undefined || progress === null) return;
+    (cfg.scenes || []).forEach(function (scene) {
+      if (Math.abs(progress - scene.scroll) < 0.025)
+        dwellState[scene.id] = { dwellEnd: performance.now() + dwellSeconds * 1000 };
+    });
+  }
+
+  function updateScenes(progress) {
+    var fadeRange         = cfg.fadeRange         || 0.18;
+    var approachTolerance = cfg.approachTolerance || 0.035;
+    var now = performance.now();
+    (cfg.scenes || []).forEach(function (scene) {
+      var el = document.querySelector('[data-scene="' + scene.id + '"]');
+      if (!el) return;
+      var dist       = Math.abs(progress - scene.scroll);
+      var isApproach = dist < approachTolerance;
+      var dwell      = dwellState[scene.id];
+      var isDwelling = dwell && now < dwell.dwellEnd;
+      var opacity    = (isApproach || isDwelling) ? 1 : Math.max(0, 1 - dist / fadeRange);
+      el.style.opacity = opacity;
+      el.querySelectorAll('[data-stagger]').forEach(function (child) {
+        var lag     = parseFloat(child.dataset.stagger || 0) * 0.010;
+        var delayed = Math.max(0, dist - lag);
+        child.style.opacity = (isApproach || isDwelling) ? 1 : Math.max(0, 1 - delayed / fadeRange);
+      });
+    });
+  }
+
+  function buildSnapPoints() {
+    if (!cfg.snapToScenes) return false;
+    var allPoints = [0].concat((cfg.scenes || []).map(function (s) { return s.scroll; })).concat(cfg.waypoints || []).concat([1]);
+    var seen = {};
+    var points = allPoints
+      .map(function (p) { return Math.round(p * 1000) / 1000; })
+      .filter(function (p) { if (seen[p]) return false; seen[p] = true; return true; })
+      .sort(function (a, b) { return a - b; });
+    return {
+      snapTo:   points,
+      duration: { min: 0.02, max: 0.04 },
+      delay:    cfg.snapDelay !== undefined ? cfg.snapDelay : 0.15,
+      ease:     'none',
+      onStart: function () {
+        snapInProgress = true;
+        if (st) {
+          var p = st.progress;
+          snapDestProgress = points.reduce(function (a, b) { return Math.abs(b - p) < Math.abs(a - p) ? b : a; });
+          drawFrame(snapDestProgress);
+        }
+      },
+      onComplete: function () {
+        snapInProgress = false; snapDestProgress = null;
+        if (st) { drawFrame(st.progress); onSnapEngaged(st.progress); }
+      }
+    };
+  }
+
+  function initScrollTrigger() {
+    st = ScrollTrigger.create({
+      trigger: heroSection,
+      start:   'top top',
+      end:     '+=' + (cfg.scrollBudget || '450%'),
+      pin:     true,
+      scrub:   useFrames ? true : (cfg.scrubSmooth !== undefined ? cfg.scrubSmooth : 1),
+      snap:    buildSnapPoints(),
+      onUpdate: function (self) {
+        if (!snapInProgress) {
+          if (useFrames)  drawFrame(self.progress);
+          else if (video) video.currentTime = mapToVideoTime(self.progress);
+        }
+        updateScenes(self.progress);
+        if (progressBar) progressBar.style.width = (self.progress * 100) + '%';
+        if (scrollHint)  scrollHint.style.opacity = self.progress < 0.04 ? 1 : 0;
+      }
+    });
+
+    document.querySelectorAll('.gsap-reveal').forEach(function (el) {
+      var delay = parseFloat(el.dataset.delay || 0);
+      gsap.fromTo(el, { opacity: 0, y: 60 }, {
+        opacity: 1, y: 0, duration: 1, delay: delay, ease: 'power2.out',
+        scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' }
+      });
+    });
+
+    if (nav) {
+      ScrollTrigger.create({
+        trigger: heroSection,
+        start:   'top top',
+        end:     '+=' + (cfg.scrollBudget || '450%'),
+        onUpdate: function (self) { nav.classList.toggle('nav-scrolled', self.progress > 0.05); }
+      });
+    }
+  }
+
+  if (useFrames) preloadFrames(initScrollTrigger);
+  else           initVideoFallback(initScrollTrigger);
+
+})();
+</script>
+
+</body>
+</html>

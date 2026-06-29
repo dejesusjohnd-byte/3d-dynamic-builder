@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrailBound — Carbon Road Bikes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0d0d0d;
+      --accent:  #c8b89a;
+      --text:    #f0ede8;
+      --muted:   #6b6560;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body:    'DM Sans', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+    }
+
+    /* ── Progress bar ── */
+    #v4-progress-bar {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 2px; z-index: 1000;
+      background: rgba(200,184,154,0.12);
+    }
+    #v4-progress {
+      height: 100%; width: 0%;
+      background: var(--accent);
+      transition: width 0.05s linear;
+    }
+
+    /* ── Nav ── */
+    #v4-nav {
+      position: fixed; top: 0; left: 0;
+      width: 100%; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 30px 52px;
+      opacity: 0; transition: opacity 0.7s ease;
+      pointer-events: none;
+    }
+    #v4-nav.scrolled {
+      background: linear-gradient(to bottom, rgba(13,13,13,0.72) 0%, transparent 100%);
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.45rem; font-weight: 400;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text); text-decoration: none;
+    }
+    .nav-cta {
+      font-family: var(--font-body);
+      font-size: 0.75rem; font-weight: 500;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text); text-decoration: none;
+      border-bottom: 1px solid rgba(200,184,154,0.45);
+      padding-bottom: 2px;
+      transition: color 0.3s, border-color 0.3s;
+    }
+    .nav-cta:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* ── Hero scroll container ── */
+    #v4-scroll-container { height: 700vh; position: relative; }
+    #v4-sticky {
+      position: sticky; top: 0;
+      height: 100vh; width: 100%;
+      overflow: hidden;
+    }
+
+    /* ── Video ── */
+    #v4-video {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    /* ── Scenes ── */
+    .scene {
+      position: absolute;
+      opacity: 0; visibility: hidden;
+      max-width: 500px;
+    }
+
+    /* Dark-text variant for light-background scenes */
+    .scene.light-bg .scene-label   { color: #8a7a60; }
+    .scene.light-bg .scene-headline { color: #141414; }
+    .scene.light-bg .scene-sub     { color: rgba(30,30,30,0.55); }
+
+    .scene-label {
+      display: block;
+      font-family: var(--font-body);
+      font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.24em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+    .scene-headline {
+      font-family: var(--font-display);
+      font-size: clamp(2.6rem, 5.2vw, 4.4rem);
+      font-weight: 300; line-height: 1.06;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .scene-sub {
+      font-family: var(--font-body);
+      font-size: 0.85rem; font-weight: 300;
+      color: rgba(240,237,232,0.6);
+      margin-top: 16px; line-height: 1.65;
+      letter-spacing: 0.02em;
+    }
+
+    /* CTA button inside scene */
+    .scene-btn {
+      display: inline-block; margin-top: 32px;
+      font-family: var(--font-body);
+      font-size: 0.76rem; font-weight: 500;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--bg); background: var(--accent);
+      padding: 15px 40px; text-decoration: none;
+      transition: background 0.3s;
+    }
+    .scene-btn:hover { background: var(--text); }
+
+    /* Scene 8 — centred CTA */
+    #scene-8 {
+      left: 0; right: 0; bottom: 14%;
+      max-width: 100%;
+      text-align: center;
+    }
+    #scene-8 .scene-headline {
+      font-size: clamp(2rem, 4vw, 3.6rem);
+    }
+
+    /* ── Scroll hint ── */
+    #v4-scroll-hint {
+      position: absolute; bottom: 38px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      transition: opacity 0.6s;
+    }
+    #v4-scroll-hint.hidden { opacity: 0; pointer-events: none; }
+    .hint-text {
+      font-family: var(--font-body);
+      font-size: 0.66rem; letter-spacing: 0.24em; text-transform: uppercase;
+      color: rgba(240,237,232,0.35);
+    }
+    .hint-line {
+      width: 1px; height: 44px;
+      background: linear-gradient(to bottom, rgba(200,184,154,0.55), transparent);
+      animation: drip 1.9s ease-in-out infinite;
+    }
+    @keyframes drip {
+      0%, 100% { transform: scaleY(1);   opacity: 1; }
+      55%       { transform: scaleY(0.3); opacity: 0.25; }
+    }
+
+    /* ═══════════════════════════
+       Below-fold sections
+    ═══════════════════════════ */
+    #v4-below-fold { background: var(--bg); }
+
+    /* ── Features ── */
+    .features {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      padding: 100px 80px;
+      border-top: 1px solid rgba(200,184,154,0.14);
+    }
+    .feature {
+      padding: 0 52px 0 0;
+      border-right: 1px solid rgba(200,184,154,0.1);
+    }
+    .feature + .feature { padding: 0 52px 0 52px; }
+    .feature:last-child { border-right: none; padding-right: 0; }
+    .feature-num {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 0.85rem; letter-spacing: 0.12em;
+      color: var(--accent); margin-bottom: 28px;
+    }
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 1.85rem; font-weight: 300;
+      line-height: 1.12; color: var(--text);
+      margin-bottom: 18px;
+    }
+    .feature-desc {
+      font-family: var(--font-body);
+      font-size: 0.83rem; font-weight: 300;
+      color: var(--muted); line-height: 1.8;
+    }
+
+    /* ── 3D model section ── */
+    .model-section {
+      padding: 80px 80px 100px;
+      border-top: 1px solid rgba(200,184,154,0.1);
+    }
+    .section-eyebrow {
+      display: block;
+      font-family: var(--font-body);
+      font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.24em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 20px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 3.8vw, 3.4rem);
+      font-weight: 300; line-height: 1.1;
+      color: var(--text); margin-bottom: 52px;
+      max-width: 560px;
+    }
+    model-viewer {
+      width: 100%; height: 62vh;
+      background: transparent;
+      --poster-color: transparent;
+    }
+
+    /* ── Components row ── */
+    .components {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      padding: 80px 80px 100px;
+      border-top: 1px solid rgba(200,184,154,0.1);
+    }
+    .component-viewer {
+      width: 100%; height: 38vh;
+      background: rgba(255,255,255,0.015);
+      border: 1px solid rgba(200,184,154,0.08);
+      --poster-color: transparent;
+    }
+    .component-name {
+      font-family: var(--font-display);
+      font-size: 1.6rem; font-weight: 300;
+      color: var(--text);
+      margin-top: 26px; margin-bottom: 10px;
+    }
+    .component-desc {
+      font-family: var(--font-body);
+      font-size: 0.82rem; font-weight: 300;
+      color: var(--muted); line-height: 1.75;
+    }
+
+    /* ── CTA section ── */
+    .cta-section {
+      padding: 160px 80px 140px;
+      border-top: 1px solid rgba(200,184,154,0.1);
+      text-align: center;
+    }
+    .cta-eyebrow {
+      display: block;
+      font-family: var(--font-body);
+      font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.24em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 28px;
+    }
+    .cta-headline {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 6.5vw, 5.8rem);
+      font-weight: 300; line-height: 1.05;
+      color: var(--text); margin-bottom: 52px;
+    }
+    .cta-headline em { font-style: italic; color: var(--accent); }
+    .cta-btn {
+      display: inline-block;
+      font-family: var(--font-body);
+      font-size: 0.8rem; font-weight: 500;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--bg); background: var(--accent);
+      padding: 18px 60px; text-decoration: none;
+      transition: background 0.3s;
+    }
+    .cta-btn:hover { background: var(--text); }
+
+    /* ── Footer ── */
+    footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 36px 80px;
+      border-top: 1px solid rgba(200,184,154,0.1);
+    }
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 1rem; font-weight: 400;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .footer-copy {
+      font-family: var(--font-body);
+      font-size: 0.74rem; font-weight: 300;
+      color: var(--muted); letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Progress bar -->
+  <div id="v4-progress-bar"><div id="v4-progress"></div></div>
+
+  <!-- Nav -->
+  <nav id="v4-nav">
+    <a href="#" class="nav-logo">TrailBound</a>
+    <a href="#buy" class="nav-cta">Buy Now</a>
+  </nav>
+
+  <!-- ═══════════ HERO SCROLL CONTAINER ═══════════ -->
+  <div id="v4-scroll-container">
+    <div id="v4-sticky">
+
+      <video id="v4-video" muted playsinline preload="auto">
+        <source src="../assets/video/ImprovedVersion_Bicycle.mp4" type="video/mp4">
+      </video>
+
+      <!-- Scene 1 — front-on, white bg — dark text: top:8%; left:5% -->
+      <div id="scene-1" class="scene light-bg" style="top:8%;left:5%;">
+        <span class="scene-label">Carbon Road</span>
+        <h1 class="scene-headline">Trail<br>Bound</h1>
+        <p class="scene-sub" style="color:rgba(30,30,30,0.5);">Born from the road.</p>
+      </div>
+
+      <!-- Scene 2 — side profile, white bg — dark text: top:7%; right:6% -->
+      <div id="scene-2" class="scene light-bg" style="top:7%;right:6%;text-align:right;">
+        <span class="scene-label">2025 Collection</span>
+        <h2 class="scene-headline">Engineered<br>for Distance</h2>
+        <p class="scene-sub" style="color:rgba(30,30,30,0.5);">Carbon frame. Zero compromise.</p>
+      </div>
+
+      <!-- Scene 3 — dark bg full bike: top:11%; left:5% -->
+      <div id="scene-3" class="scene" style="top:11%;left:5%;">
+        <span class="scene-label">The Frame</span>
+        <h2 class="scene-headline">Every Detail,<br>Considered</h2>
+      </div>
+
+      <!-- Scene 4 — seat post close-up: top:6%; right:5% -->
+      <div id="scene-4" class="scene" style="top:6%;right:5%;text-align:right;">
+        <span class="scene-label">Saddle & Seatpost</span>
+        <h2 class="scene-headline">The Perfect<br>Saddle Line</h2>
+        <p class="scene-sub">Comfort that doesn't quit.</p>
+      </div>
+
+      <!-- Scene 5 — handlebars: bottom:12%; right:6% -->
+      <div id="scene-5" class="scene" style="bottom:12%;right:6%;text-align:right;">
+        <span class="scene-label">Cockpit</span>
+        <h2 class="scene-headline">Grip<br>the Road</h2>
+        <p class="scene-sub">Precision-wrapped drop bars.</p>
+      </div>
+
+      <!-- Scene 6 — front fork & wheel: top:10%; right:7% -->
+      <div id="scene-6" class="scene" style="top:10%;right:7%;text-align:right;">
+        <span class="scene-label">Braking</span>
+        <h2 class="scene-headline">Disc Brakes<br>Standard</h2>
+        <p class="scene-sub">Stop when it matters.</p>
+      </div>
+
+      <!-- Scene 7 — bike in forest: top:9%; right:6% -->
+      <div id="scene-7" class="scene" style="top:9%;right:6%;text-align:right;">
+        <span class="scene-label">The Ride</span>
+        <h2 class="scene-headline">Your Trail<br>Awaits</h2>
+      </div>
+
+      <!-- Scene 8 — forest trail CTA: bottom:14%; centered -->
+      <div id="scene-8" class="scene">
+        <h2 class="scene-headline">Shop TrailBound</h2>
+        <a href="#buy" class="scene-btn">Buy Now</a>
+      </div>
+
+      <!-- Scroll hint -->
+      <div id="v4-scroll-hint">
+        <span class="hint-text">Scroll</span>
+        <div class="hint-line"></div>
+      </div>
+
+    </div>
+  </div>
+  <!-- ═══════════ END HERO ═══════════ -->
+
+  <!-- ═══════════ BELOW FOLD ═══════════ -->
+  <div id="v4-below-fold">
+
+    <!-- Features -->
+    <section class="features">
+      <div class="feature">
+        <span class="feature-num">01</span>
+        <h3 class="feature-title">Full Carbon<br>Frame</h3>
+        <p class="feature-desc">Aerospace-grade carbon layup delivers a frame under 900g while absorbing road vibration across every climb and descent.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-num">02</span>
+        <h3 class="feature-title">Hydraulic<br>Disc Brakes</h3>
+        <p class="feature-desc">Four-piston calipers front and rear. Consistent, modulated stopping power in any condition — wet road or mountain descent.</p>
+      </div>
+      <div class="feature">
+        <span class="feature-num">03</span>
+        <h3 class="feature-title">Precision<br>Drivetrain</h3>
+        <p class="feature-desc">12-speed electronic groupset with a 10–36T cassette. Shift in milliseconds. Climb anything the trail throws at you.</p>
+      </div>
+    </section>
+
+    <!-- 3D Model Viewer -->
+    <section class="model-section">
+      <span class="section-eyebrow">Explore the Build</span>
+      <h2 class="section-title">Every angle.<br>Every component.</h2>
+      <model-viewer
+        src="../assets/3d/btwin_triban_100_road_bike.glb"
+        alt="TrailBound carbon road bike — interactive 3D model"
+        camera-controls
+        auto-rotate
+        auto-rotate-delay="1200"
+        rotation-per-second="14deg"
+        environment-image="neutral"
+        shadow-intensity="1.2"
+        exposure="0.88"
+        tone-mapping="commerce"
+      ></model-viewer>
+    </section>
+
+    <!-- Components -->
+    <section class="components">
+      <div>
+        <model-viewer
+          class="component-viewer"
+          src="../assets/3d/bike_gears_cassette.glb"
+          alt="12-speed cassette"
+          camera-controls
+          auto-rotate
+          auto-rotate-delay="800"
+          environment-image="neutral"
+          shadow-intensity="1"
+          exposure="0.9"
+        ></model-viewer>
+        <h3 class="component-name">12-Speed Cassette</h3>
+        <p class="component-desc">Titanium-bodied 10–36T cassette engineered for seamless gear progression across every gradient. Built to last 10,000 km.</p>
+      </div>
+      <div>
+        <model-viewer
+          class="component-viewer"
+          src="../assets/3d/generic_carbon_fibre_road_bike_wheels.glb"
+          alt="Carbon fibre wheelset"
+          camera-controls
+          auto-rotate
+          auto-rotate-delay="800"
+          environment-image="neutral"
+          shadow-intensity="1"
+          exposure="0.9"
+        ></model-viewer>
+        <h3 class="component-name">Carbon Wheelset</h3>
+        <p class="component-desc">50mm carbon clinchers with 24-spoke lacing. Optimised for aerodynamics without sacrificing lateral stiffness on rough terrain.</p>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section" id="buy">
+      <span class="cta-eyebrow">TrailBound — 2025</span>
+      <h2 class="cta-headline">Built for<br>where you're <em>going.</em></h2>
+      <a href="#" class="cta-btn">Shop Now</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <span class="footer-logo">TrailBound</span>
+      <span class="footer-copy">&copy; 2025 TrailBound. All rights reserved.</span>
+    </footer>
+
+  </div>
+  <!-- ═══════════ END BELOW FOLD ═══════════ -->
+
+  <!-- ENGINE START -->
+  <script>
+  window.V4_CONFIG = {
+    videoRatio:     0.65,
+    fadeRange:      0.022,
+    staggerLag:     0.55,
+    nav: { showAfter: 0.015 },
+    scenes: [
+      { id: 'scene-1', start: 0.000, end: 0.068 },
+      { id: 'scene-2', start: 0.075, end: 0.155 },
+      { id: 'scene-3', start: 0.168, end: 0.248 },
+      { id: 'scene-4', start: 0.275, end: 0.368 },
+      { id: 'scene-5', start: 0.388, end: 0.462 },
+      { id: 'scene-6', start: 0.472, end: 0.548 },
+      { id: 'scene-7', start: 0.568, end: 0.640 },
+      { id: 'scene-8', start: 0.645, end: 0.730 }
+    ]
+  };
+  </script>
+  <script>
+  /**
+   * V4 Scroll-Scrub Engine
+   * Copy this verbatim between ENGINE START and ENGINE END markers in index.html.
+   * Do not modify. Configure via window.V4_CONFIG before this script.
+   *
+   * Supports: single video, two-video crossfade, scene stagger, below-fold reveal.
+   * Fixes: heroMaxScroll (container-only), Chrome first-frame unlock, below-fold reset bug.
+   */
+  (function V4Engine() {
+    'use strict';
+
+    var cfg            = window.V4_CONFIG || {};
+    var VIDEO_RATIO    = cfg.videoRatio     || 0.65;
+    var FADE_RANGE     = cfg.fadeRange      || 0.022;
+    var STAGGER_LAG    = cfg.staggerLag     || 0.55;
+    var VIDEO_SPLIT    = cfg.videoSplit     || null;   // null = single video
+    var XFADE_WIDTH    = cfg.crossfadeWidth || 0.06;
+
+    var video1, video2;
+    var heroMaxScroll, totalMaxScroll, raf;
+
+    /* Derived two-video split points (only used when VIDEO_SPLIT is set) */
+    var V1_END, FADE_LOW, FADE_HIGH;
+    if (VIDEO_SPLIT !== null) {
+      V1_END    = VIDEO_RATIO * VIDEO_SPLIT;
+      FADE_LOW  = V1_END - XFADE_WIDTH / 2;
+      FADE_HIGH = V1_END + XFADE_WIDTH / 2;
+    }
+
+    /* ── Chrome unlock: play once then pause to decode first frame ── */
+    function unlockVideo(v) {
+      if (!v) return;
+      v.muted = true;
+      v.playsInline = true;
+      v.preload = 'auto';
+      v.load();
+      v.addEventListener('loadedmetadata', function() {
+        v.play().then(function() {
+          v.pause();
+          try { v.currentTime = 0.001; } catch(e) {}
+        }).catch(function() {
+          try { v.currentTime = 0.001; } catch(e) {}
+        });
+      }, { once: true });
+    }
+
+    function init() {
+      video1 = document.getElementById('v4-video');
+      video2 = document.getElementById('v4-video2') || null;
+
+      if (!video1) { console.warn('[V4] #v4-video not found'); return; }
+
+      unlockVideo(video1);
+      unlockVideo(video2);
+
+      /* Touch unlock for mobile */
+      document.addEventListener('touchstart', function unlock() {
+        [video1, video2].forEach(function(v) {
+          if (v) v.play().then(function() { v.pause(); }).catch(function(){});
+        });
+        document.removeEventListener('touchstart', unlock);
+      }, { once: true });
+
+      measure();
+      tick();
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', measure);
+    }
+
+    /* Use scroll container height only — never document.scrollHeight.
+       This isolates the hero scrub from below-fold content height changes. */
+    function measure() {
+      var container = document.getElementById('v4-scroll-container');
+      heroMaxScroll  = container
+        ? Math.max(container.offsetHeight - window.innerHeight, 1)
+        : Math.max(window.innerHeight * 5, 1);
+      totalMaxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+    }
+
+    function onScroll() { if (!raf) raf = requestAnimationFrame(tick); }
+
+    function tick() {
+      raf = null;
+      var scrollY = window.scrollY;
+      var p       = Math.min(scrollY / heroMaxScroll, 1.05);  /* hero progress */
+      var totalP  = scrollY / totalMaxScroll;                  /* full page progress */
+
+      scrub(p);
+      renderScenes(p);
+      renderNav(p);
+      renderBelowFold(p);
+      renderScrollHint(p);
+      renderProgressBar(totalP);
+    }
+
+    function scrub(p) {
+      if (VIDEO_SPLIT === null) {
+        /* Single video */
+        if (video1 && video1.readyState >= 2 && video1.duration) {
+          try { video1.currentTime = Math.min(p / VIDEO_RATIO, 1) * video1.duration; } catch(e) {}
+        }
+      } else {
+        /* Two-video crossfade */
+        if (video1 && video1.readyState >= 2 && video1.duration) {
+          var p1 = Math.min(p / V1_END, 1);
+          try { video1.currentTime = p1 * video1.duration; } catch(e) {}
+        }
+        if (video2 && video2.readyState >= 2 && video2.duration) {
+          var v2Range = VIDEO_RATIO - V1_END;
+          var p2 = Math.min(Math.max(p - V1_END, 0) / v2Range, 1);
+          try { video2.currentTime = p2 * video2.duration; } catch(e) {}
+        }
+        /* Crossfade opacity */
+        var crossT = Math.min(Math.max((p - FADE_LOW) / (FADE_HIGH - FADE_LOW), 0), 1);
+        if (video1) video1.style.opacity = 1 - crossT;
+        if (video2) video2.style.opacity = crossT;
+      }
+    }
+
+    function renderScenes(p) {
+      (cfg.scenes || []).forEach(function(scene) {
+        var el = document.getElementById(scene.id);
+        if (!el) return;
+        var op = (p >= scene.start && p <= scene.end)
+          ? clamp(Math.min((p - scene.start) / FADE_RANGE, (scene.end - p) / FADE_RANGE), 0, 1)
+          : 0;
+        el.style.opacity    = op;
+        el.style.visibility = op > 0 ? 'visible' : 'hidden';
+        if (op > 0) {
+          el.querySelectorAll('[data-stagger]').forEach(function(ch) {
+            var idx = parseInt(ch.getAttribute('data-stagger'), 10) || 0;
+            ch.style.opacity = clamp(
+              (p - scene.start - idx * STAGGER_LAG * FADE_RANGE) / FADE_RANGE,
+              0, 1
+            );
+          });
+        }
+      });
+    }
+
+    function renderNav(p) {
+      var nav = document.getElementById('v4-nav');
+      if (!nav) return;
+      var threshold = (cfg.nav && cfg.nav.showAfter != null) ? cfg.nav.showAfter : 0;
+      nav.style.opacity       = p >= threshold ? '1' : '0';
+      nav.style.pointerEvents = p >= threshold ? 'all' : 'none';
+      if (p > 0.05) nav.classList.add('scrolled');
+      else          nav.classList.remove('scrolled');
+    }
+
+    function renderBelowFold(p) {
+      var el = document.getElementById('v4-below-fold');
+      if (el) el.style.opacity = clamp((p - (VIDEO_RATIO + 0.02)) / 0.04, 0, 1);
+    }
+
+    function renderScrollHint(p) {
+      var h = document.getElementById('v4-scroll-hint');
+      if (h && p > 0.03) h.classList.add('hidden');
+    }
+
+    function renderProgressBar(totalP) {
+      var bar = document.getElementById('v4-progress');
+      if (bar) bar.style.width = (Math.min(totalP, 1) * 100) + '%';
+    }
+
+    function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+
+  })();
+  </script>
+  <!-- ENGINE END -->
+
+</body>
+</html>

@@ -1,75 +1,248 @@
-# Session Init — Pipeline v1
+# Session Init — Pipeline v5
 **You are building a scroll-scrubbed video hero website. Read this. Then build.**
+
+---
+
+## Engine version
+
+Current active engine: **scroll-gsap.js v5.1**
+Archived versions: `engine/scroll-gsap-v5.0.js`, `engine/scroll-gsap-v5.1.js`
+Full changelog: `engine/CHANGELOG.md`
+
+To roll back: copy the archived version over `scroll-gsap.js` and update GSAP_CONFIG to remove fields introduced after that version.
+
+## What changed from v4
+
+| v4 | v5.0 | v5.1 |
+|----|------|------|
+| Vanilla JS scroll engine | GSAP ScrollTrigger engine | Same |
+| scroll% = video% (linear only) | videoMap anchors (non-linear) | Same + data-driven from motion_profile.json |
+| Fixed vh scroll container | Pinned hero — releases cleanly | Same |
+| IntersectionObserver reveals | GSAP ScrollTrigger reveals | Same |
+| GSAP optional, rarely used | GSAP mandatory | Same |
+| Interval keyframes (% based) | Scene-detected + timestamp filenames | Same |
+| No motion data | No motion data | setup.py generates logs/motion_profile.json |
+| No scroll snap | No scroll snap | snapToScenes: true holds scroll at each scene anchor |
+| fadeRange 0.09 default | fadeRange 0.09 default | fadeRange 0.18 recommended |
 
 ---
 
 ## Startup — every session, every time
 
-**Step 1 — Find the active project folder**
-Look inside `projects/`. The active project is any folder that is NOT named `sample_project` and has a video in `assets/video/`. If nothing exists yet except `sample_project/`, ask the user what their project is called before doing anything else.
+**Step 1 — Find the active project**
+Look inside `builds/`. Active project = any folder with a video in `assets/video/`.
+If only empty folders exist, ask: *"What is your project called? Do you have your video ready locally?"*
 
-**Step 2 — Check for assets**
-- `assets/video/` has a video → check keyframes next:
-  - `assets/images/keyframes/` has images → proceed to Step 3
-  - Empty → run: `python setup.py "" "projects/[project-name]"` to extract keyframes from the existing video
-- `assets/video/` empty → ask for Drive link. Run: `python setup.py [link] "projects/[project-name]"`
-- Also check `assets/3d/` — list every `.glb` file found. These become below-fold 3D sections.
+**Step 2 — Check keyframes + motion profile**
+- `assets/images/keyframes/` has `.jpg` files → read them. Timestamp is in filename: `frame_03_t08.7s.jpg` = t8.7s
+- `logs/motion_profile.json` exists → read `suggested_videoMap` from it. Use it as the base for GSAP_CONFIG.videoMap instead of guessing. Adjust scroll values for creative reasons, but anchor the data.
+- Either file missing → run: `python setup.py "builds/[project-name]"` from the v5 root.
+  - Extracts keyframes (ffmpeg scene detection → opencv fallback)
+  - Runs motion analysis → writes `logs/motion_profile.json`
+  - Both outputs generated in one command.
 
-**Step 3 — Check for brief**
-- `logs/brief.md` has content → read it, proceed to build
-- Missing → ask these 4 questions in one message:
+**Step 3 — Check 3D assets**
+Check `assets/3d/` — only use GLBs if the brief explicitly asks for 3D or product model display. If the project is video/photo focused, skip 3D sections even if GLB files are present.
+
+**Step 4 — Check brief**
+- `logs/brief.md` has content → read silently, proceed
+- Empty → ask these 4 questions in one message:
   > Brand name? / What does the visitor do? / 3 words for how it feels? / 3 words for what it must NOT feel like?
   Save answers to `logs/brief.md`.
 
-**Step 4 — Build**
-Assets + brief = ready. Proceed to build steps below.
+**Step 5 — Build**
+Keyframes + brief = ready. Follow build steps below.
 
 ---
 
 ## What you are building
-A single self-contained HTML file. Fullscreen scroll-scrubbed video hero. Below-fold sections. No frameworks. No external scripts except Google Fonts. Output goes in `output/index.html`.
+
+A single self-contained HTML file. Pinned scroll-scrubbed video hero using GSAP ScrollTrigger. Below-fold sections with GSAP-powered reveals. No frameworks. Output: `output/index.html`.
+
+GSAP is the animation system for the entire page — not just the hero.
 
 ---
 
 ## Build steps
 
-### 1 — Identify video type
-**Subject/Object-Based** — camera static, one object transforms. Text goes in open space around the object.
-**Location-Based** — camera moves through environment. Text follows the leading edge of motion.
+### 1 — Classify the video (4 types)
 
-### 2 — Frame log
-Read keyframe screenshots from `assets/images/keyframes/`. Build this table:
+**Object-Focused** — camera static, one subject transforms or reveals. Text in open space around subject.
 
-| Frame | Video type | What fills frame | Open space | Headline position (CSS) |
-|-------|-----------|-----------------|------------|------------------------|
+**Location-Focused** — camera moves through environment. Text follows the leading edge of motion.
 
-- Open space = no dominant visual. Text lives there.
-- CSS must be exact coordinates: `top: 8%; right: 6%` not descriptions
+**Hybrid** — transitions between the two. Treat each segment by its own type, define where the shift happens in the videoMap.
+
+**Cinematic** — cuts, multiple angles, non-continuous motion. Map each cut as a videoMap anchor. Text appears between cuts, not during them.
+
+If you can't tell, ask the user to describe the video in one sentence before continuing.
+
+### 2 — Read keyframes + build videoMap
+
+Read every keyframe image. The filename tells you the exact video timestamp.
+
+Build the videoMap — this is the non-linear scroll-to-video mapping.
+
+**v5.1: use motion_profile.json first.** Read `suggested_videoMap` from `logs/motion_profile.json`. It is generated by setup.py from actual frame-differencing data, not visual guesswork. Use those anchors as the starting point; adjust only where creative intent overrides the data.
+
+```javascript
+videoMap: [
+  { scroll: 0.00, time: 0.0,  label: "intro"  },
+  { scroll: 0.25, time: 4.2,  label: "reveal" },   // slow → wide scroll budget
+  { scroll: 0.55, time: 14.8, label: "peak"   },   // fast → narrow scroll budget
+  { scroll: 1.00, time: 30.0, label: "outro"  }
+]
+```
+
+Rules:
+- Dramatic slow moments → more scroll budget (wider gap)
+- Fast cuts/transitions → less scroll budget (narrow gap)
+- motion_profile.json encodes this automatically via avg_motion per segment
+- Override with reason — state any creative deviations in the build plan
+
+**v5.1 snap config:**
+```javascript
+snapToScenes: true,   // scroll holds at each scene.scroll position so text can be read
+snapDelay:    0.25,   // seconds before snap engages. 0.1 = snappy, 0.5 = relaxed
+fadeRange:    0.18,   // scene text visibility window. 0.09 = v5.0 (racing), 0.18 = recommended
+```
+Set `snapToScenes: false` to disable snap and return to free-scroll behavior (v5.0).
+
+### 3 — Frame log
+
+| Frame | Timestamp | Video type | What fills frame | Open space | Headline CSS |
+|-------|-----------|-----------|-----------------|------------|--------------|
+
+- CSS must be exact coordinates: `top: 8%; right: 6%` — never descriptions
 - No two frames share the same headline position
+- Extract: background color, accent color, text color (hex)
 
-Extract from screenshots: background color, accent color, text color (hex).
+### 4 — Build plan (share before writing HTML)
 
-### 3 — Build plan (share before building)
 ```
 Video type:
-Colors:     bg / accent / text / muted
-Fonts:      display / body
-3D assets:  list GLB files found in assets/3d/ — one section per model
-Sections:   list of below-fold sections in order
-Copy:       per scene — headline / subhead / pitch
+Colors:      bg / accent / text / muted
+Fonts:       display / body
+scrollBudget: [e.g. "350%"] — total hero scroll distance
+videoMap:    [list anchors with reasoning]
+3D assets:   [GLB → section name]
+Sections:    [below-fold sections in order]
+Copy:        per scene — headline / subhead / pitch
 ```
 
-### 4 — HTML
-- Copy engine verbatim from `engine/scroll-scrub.js` between ENGINE START / ENGINE END markers
-- Video path: `../assets/video/filename.mp4`
-- Scene positions: from frame log only
-- Output: `output/index.html`
-- 3D sections: load model-viewer from CDN, reference GLBs as `../assets/3d/filename.glb`
+Wait for confirm before writing HTML.
 
-### 3D model-viewer rules
+### 5 — HTML structure
+
+```html
+<!-- GSAP CDN — load before engine -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+<!-- GSAP_CONFIG — defined BEFORE engine script -->
+<script>
+window.GSAP_CONFIG = {
+  videoSrc:     "../assets/video/filename.mp4",
+  scrollBudget: "350%",
+  scrubSmooth:  1,
+  fadeRange:    0.08,
+  videoMap: [ ... ],
+  scenes:   [ ... ]
+};
+</script>
+
+<!-- ENGINE START -->
+[paste engine/scroll-gsap.js verbatim here]
+<!-- ENGINE END -->
+```
+
+Required element IDs (engine expects these):
+- `#hero-section` — the pinned hero wrapper
+- `#hero-video` — the video element
+- `#hero-nav` — navigation bar
+- `#hero-progress` — progress bar element
+- `#hero-scroll-hint` — scroll indicator
+- `#below-fold` — below-fold content wrapper
+
+Scene overlays: `<div data-scene="scene-1">` with children using `data-stagger="0/1/2"`.
+
+Below-fold reveals: add class `gsap-reveal` to any element that should animate in on scroll. Add `data-delay="0.1"` to stagger siblings.
+
+### 6 — 3D sections
+
 ```html
 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
-<model-viewer src="../assets/3d/filename.glb" auto-rotate camera-controls
-  style="display:block; width:100%; height:70vh;"></model-viewer>
+
+<model-viewer
+  src="../assets/3d/filename.glb"
+  auto-rotate camera-controls
+  style="display:block; width:100%; height:70vh;">
+</model-viewer>
 ```
-- **Always set explicit height** — `height: 70vh` minimum
+
+- Always explicit height — never `position:absolute; inset:0`
+- White/untextured models: add `environment-image="legacy" exposure="0.75"`
+- Wrong orientation: add `orientation="90deg 0deg 0deg"`
+- Tell user to run `START SERVER.bat` — GLBs fail on `file://`
+
+### 7 — GSAP animations (mandatory — not optional)
+
+Every build must include all of these:
+
+**Hero text** — stagger via `data-stagger` on scene children (engine handles opacity). Add CSS transitions for hover: color shift to accent, letter-spacing expand on headlines.
+
+**Below-fold reveals** — add `.gsap-reveal` class to sections. Engine handles fade + translateY.
+
+**Hover states** — all interactive elements get GSAP hover. Use `gsap.to()` on mouseenter, reverse on mouseleave. No two elements share the same hover effect.
+
+**Navbar** — fades from transparent to solid at `progress > 0.05`. Engine handles via `.nav-scrolled` class. Style `.nav-scrolled` in CSS.
+
+### 8 — Before delivering
+
+- [ ] GSAP + ScrollTrigger CDN scripts in `<head>` before engine
+- [ ] `window.GSAP_CONFIG` defined before engine script
+- [ ] `<!-- ENGINE START -->` and `<!-- ENGINE END -->` markers present, engine intact
+- [ ] Video src: `../assets/video/filename.mp4`
+- [ ] Chrome autoplay unlock in engine (already included — do not re-add)
+- [ ] All required element IDs present in HTML
+- [ ] No two scenes share the same headline position
+- [ ] model-viewer CDN in `<head>` if GLBs used
+- [ ] GLB paths: `../assets/3d/filename.glb`
+- [ ] User told to run `START SERVER.bat` if build includes GLBs
+
+---
+
+## Technical rules vs creative rules
+
+**Technical — never break these:**
+- Engine copied verbatim (any modification breaks the scroll math)
+- GSAP + ScrollTrigger loaded before engine
+- `GSAP_CONFIG` defined before engine
+- Required element IDs present
+- Video path relative (`../assets/video/`)
+
+**Creative — defaults, not laws:**
+- "Extract colors from footage" — good default, override when brief demands a color the footage can't provide. Flag it explicitly in the build plan.
+- Section order — derive from brief + video, not from a template list
+- Font choices — match brand, not a default pairing
+- Accent color — can be invented if brief requires it; state that you invented it
+
+---
+
+## Log this session
+
+Append to `PIPELINE_ACTIVITY.md` in the v1 root:
+```
+## [YYYY-MM-DD] — [what was built]
+- Project: [name]
+- Engine: scroll-gsap.js v5
+- Video type: Object / Location / Hybrid / Cinematic
+- videoMap anchors: [list scroll→time pairs]
+- keyframe extraction: ffmpeg scene detection / opencv interval
+- 3D assets: YES [list] / NO
+- Brief source: 4-field / long prompt / extracted
+- Creative deviations: [any rules broken and why]
+- What worked first try:
+- What needed correction:
+- Output: [filename]
+```

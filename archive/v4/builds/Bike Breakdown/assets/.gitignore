@@ -1,0 +1,6 @@
+# Heavy files — store in Google Drive, not git
+*.glb
+*.gltf
+*.mp4
+*.mov
+*.fbx

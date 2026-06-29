@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApexGears — Built for the Trail</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #0c0c0e;
+      --accent:   #a8ff3e;
+      --text:     #f2f0ec;
+      --muted:    rgba(242,240,236,0.28);
+      --studio:   #f5f3f0;
+      --font-display: 'Barlow Condensed', sans-serif;
+      --font-body:    'DM Sans', sans-serif;
+    }
+
+    html { scroll-behavior: auto; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-body); overflow-x: hidden; cursor: none; }
+
+    #cursor-dot  { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); }
+    #cursor-ring { width: 32px; height: 32px; border: 1px solid rgba(168,255,62,0.35); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); }
+
+    /* ── Hero ── */
+    #hero-section { position: relative; width: 100%; height: 100vh; overflow: hidden; background: var(--studio); }
+    #hero-canvas  { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+    /* Loader — light bg matching frame 1 white studio */
+    #hero-frame-loader {
+      position: absolute; inset: 0; z-index: 60;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--studio); gap: 18px;
+    }
+    #hero-frame-loader .loader-brand { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; letter-spacing: 0.35em; text-transform: uppercase; color: #1a1a1a; opacity: 0.35; }
+    #hero-frame-loader .loader-pct   { font-family: var(--font-display); font-size: 4.5rem; font-weight: 800; color: #0c0c0e; min-width: 3ch; text-align: center; line-height: 1; }
+    #hero-frame-loader .loader-bar-wrap { width: 180px; height: 1px; background: rgba(12,12,14,0.08); position: relative; overflow: hidden; }
+    #hero-frame-loader .loader-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); width: var(--pct,0%); transition: width 0.08s linear; }
+    #hero-frame-loader .loader-label { font-family: var(--font-body); font-size: 0.5rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(12,12,14,0.2); }
+
+    /* Progress */
+    #hero-progress-wrap { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.04); z-index: 50; }
+    #hero-progress { height: 100%; width: 0%; background: var(--accent); }
+
+    /* Navbar */
+    #hero-nav { position: absolute; top: 0; left: 0; right: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: 28px 44px; transition: background 0.5s, padding 0.4s; }
+    #hero-nav.nav-scrolled { background: rgba(12,12,14,0.92); backdrop-filter: blur(14px); padding: 16px 44px; }
+    .nav-brand { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text); text-decoration: none; }
+    .nav-links  { display: flex; gap: 36px; list-style: none; }
+    .nav-links a { font-family: var(--font-body); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.25s; }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-cta { font-family: var(--font-display); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--bg); background: var(--accent); padding: 8px 24px; text-decoration: none; transition: background 0.25s; }
+    .nav-cta:hover { background: var(--text); }
+
+    /* ── Scene overlays ── */
+    .scene-overlay { position: absolute; pointer-events: none; opacity: 0; z-index: 30; }
+
+    /* ── Scene 1 — upper-right ──────────────────────────────────────────
+       scroll 0.18 — t~10.7s — camera mid-orbit, 3/4 side view
+       Background transitioning white→dark. Bike center-left, upper-right open.
+       Text reads against the transitioning gradient — kept minimal + bold. */
+    [data-scene="scene-1"] { top: 10%; right: 6%; text-align: right; max-width: 36%; }
+
+    .s1-eyebrow  { display: block; font-family: var(--font-body); font-size: 0.55rem; font-weight: 500; letter-spacing: 0.32em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+    .s1-headline { display: block; font-family: var(--font-display); font-weight: 800; font-size: clamp(5.5rem, 10vw, 11rem); line-height: 0.82; letter-spacing: 0.01em; text-transform: uppercase; color: var(--text); text-shadow: 0 2px 60px rgba(0,0,0,0.7); }
+    .s1-sub      { display: block; font-family: var(--font-body); font-size: 0.6rem; font-weight: 300; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(242,240,236,0.4); margin-top: 16px; }
+
+    /* ── Scene 2 — lower-left ───────────────────────────────────────────
+       scroll 0.56 — t~33s — saddle/seatpost extreme macro close-up
+       Subject fills upper-center. Lower-left is open space. Dark bg. */
+    [data-scene="scene-2"] { bottom: 10%; left: 5%; max-width: 36%; }
+
+    .s2-number { display: block; font-family: var(--font-display); font-weight: 800; font-size: clamp(5rem, 9vw, 10rem); color: var(--accent); line-height: 1; }
+    .s2-label  { display: block; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.2rem, 2vw, 2rem); letter-spacing: 0.05em; text-transform: uppercase; color: var(--text); margin-top: 2px; }
+    .s2-sub    { display: block; font-family: var(--font-body); font-size: 0.58rem; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 12px; line-height: 1.8; }
+
+    /* ── Scene 3 — lower-right ──────────────────────────────────────────
+       scroll 0.94 — t~57s — forest environment
+       Bike left-of-center on forest floor. Lower-right has natural negative space. */
+    [data-scene="scene-3"] { bottom: 12%; right: 6%; text-align: right; pointer-events: all; }
+
+    .s3-label { display: block; font-family: var(--font-body); font-size: 0.55rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+    .s3-cta   { display: inline-block; font-family: var(--font-display); font-weight: 800; font-size: clamp(3.5rem, 6vw, 7rem); letter-spacing: 0.03em; text-transform: uppercase; color: var(--text); text-decoration: none; line-height: 1; position: relative; }
+    .s3-cta::after { content: ''; position: absolute; bottom: -4px; left: 0; right: 0; height: 3px; background: var(--accent); transform: scaleX(0); transform-origin: right; transition: transform 0.4s cubic-bezier(0.77,0,0.18,1); }
+    .s3-cta:hover { color: var(--accent); }
+    .s3-cta:hover::after { transform: scaleX(1); transform-origin: left; }
+
+    /* Scroll hint */
+    #hero-scroll-hint { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 30; font-family: var(--font-body); font-size: 0.5rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(242,240,236,0.2); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    #hero-scroll-hint::after { content: ''; display: block; width: 1px; height: 30px; background: linear-gradient(to bottom, rgba(168,255,62,0.4), transparent); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+    /* ── Below fold ── */
+    #below-fold { background: var(--bg); }
+
+    #section-carbon { padding: 120px 80px; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+    .carbon-heading { grid-column: 1 / -1; }
+    .carbon-label { display: block; font-family: var(--font-body); font-size: 0.6rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+    .carbon-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(3rem, 6vw, 6.5rem); line-height: 0.88; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text); }
+    .spec-list { list-style: none; }
+    .spec-item { display: flex; align-items: baseline; justify-content: space-between; padding: 18px 0; border-bottom: 1px solid rgba(242,240,236,0.06); }
+    .spec-name  { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text); }
+    .spec-value { font-family: var(--font-body); font-size: 0.7rem; font-weight: 300; color: var(--accent); letter-spacing: 0.1em; }
+    .stat-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+    .stat-card  { background: rgba(255,255,255,0.02); padding: 32px 28px; border: 1px solid rgba(242,240,236,0.04); transition: border-color 0.3s, background 0.3s; }
+    .stat-card:hover { border-color: rgba(168,255,62,0.2); background: rgba(168,255,62,0.03); }
+    .stat-num   { display: block; font-family: var(--font-display); font-weight: 800; font-size: 2.8rem; color: var(--accent); line-height: 1; }
+    .stat-label { display: block; font-family: var(--font-body); font-size: 0.55rem; font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+
+    #section-build { background: rgba(255,255,255,0.015); padding: 100px 80px; }
+    .build-inner  { max-width: 1280px; margin: 0 auto; }
+    .build-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 60px; }
+    .build-title  { font-family: var(--font-display); font-weight: 800; font-size: clamp(2.5rem, 5vw, 5rem); text-transform: uppercase; letter-spacing: 0.03em; color: var(--text); line-height: 0.9; }
+    .build-sub    { font-family: var(--font-body); font-size: 0.65rem; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); text-align: right; max-width: 220px; line-height: 1.9; }
+    .model-wrap   { background: rgba(255,255,255,0.015); border: 1px solid rgba(242,240,236,0.05); overflow: hidden; position: relative; }
+    model-viewer  { display: block; width: 100%; height: 65vh; }
+    .model-label  { position: absolute; bottom: 24px; left: 28px; font-family: var(--font-body); font-size: 0.55rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--muted); }
+
+    #section-gears { padding: 100px 80px; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .gears-copy  { order: 1; }
+    .gears-label { display: block; font-family: var(--font-body); font-size: 0.6rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-bottom: 20px; }
+    .gears-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(2.2rem, 4vw, 4rem); text-transform: uppercase; letter-spacing: 0.03em; color: var(--text); line-height: 0.9; margin-bottom: 24px; }
+    .gears-body  { font-family: var(--font-body); font-size: 0.75rem; font-weight: 300; line-height: 1.9; color: var(--muted); max-width: 380px; }
+    .gears-model { order: 2; background: rgba(255,255,255,0.015); border: 1px solid rgba(242,240,236,0.05); }
+    .gears-model model-viewer { display: block; width: 100%; height: 45vh; }
+
+    #section-buy { padding: 160px 80px; position: relative; overflow: hidden; text-align: center; border-top: 1px solid rgba(168,255,62,0.08); }
+    #section-buy::before { content: 'APEX'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: var(--font-display); font-weight: 800; font-size: 28vw; color: rgba(168,255,62,0.025); pointer-events: none; white-space: nowrap; }
+    .buy-label    { display: block; font-family: var(--font-body); font-size: 0.6rem; font-weight: 500; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); margin-bottom: 28px; }
+    .buy-headline { font-family: var(--font-display); font-weight: 800; font-size: clamp(4rem, 9vw, 10rem); line-height: 0.85; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text); margin-bottom: 56px; position: relative; }
+    .buy-actions  { display: flex; align-items: center; justify-content: center; gap: 20px; }
+    .btn-primary  { display: inline-block; font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--bg); background: var(--accent); padding: 18px 56px; text-decoration: none; position: relative; overflow: hidden; transition: color 0.35s; }
+    .btn-primary::after { content: ''; position: absolute; inset: 0; background: var(--text); transform: translateY(101%); transition: transform 0.35s cubic-bezier(0.77,0,0.18,1); }
+    .btn-primary:hover { color: var(--bg); }
+    .btn-primary:hover::after { transform: translateY(0); }
+    .btn-primary span { position: relative; z-index: 1; }
+    .btn-secondary { display: inline-block; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(242,240,236,0.2); padding-bottom: 2px; transition: color 0.25s, border-color 0.25s; }
+    .btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
+
+    #footer { padding: 48px 80px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(242,240,236,0.05); }
+    .footer-brand { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text); text-decoration: none; transition: color 0.25s; }
+    .footer-brand:hover { color: var(--accent); }
+    .footer-links { display: flex; gap: 32px; list-style: none; }
+    .footer-links a { font-family: var(--font-body); font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.25s; }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy { font-family: var(--font-body); font-size: 0.55rem; color: rgba(242,240,236,0.12); }
+  </style>
+</head>
+<body>
+
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <section id="hero-section">
+
+    <div id="hero-progress-wrap"><div id="hero-progress"></div></div>
+    <canvas id="hero-canvas"></canvas>
+
+    <div id="hero-frame-loader">
+      <span class="loader-brand">ApexGears</span>
+      <span class="loader-pct">0%</span>
+      <div class="loader-bar-wrap"><div class="loader-bar-fill"></div></div>
+      <span class="loader-label">Loading experience</span>
+    </div>
+
+    <nav id="hero-nav">
+      <a href="#" class="nav-brand">ApexGears</a>
+      <ul class="nav-links">
+        <li><a href="#section-carbon">Specs</a></li>
+        <li><a href="#section-build">Build</a></li>
+        <li><a href="#section-buy">Buy</a></li>
+      </ul>
+      <a href="#section-buy" class="nav-cta">Configure</a>
+    </nav>
+
+    <!-- Scene 1: scroll 0.18 — t~10.7s
+         Camera mid-orbit. 3/4 side view. Background transitioning white→dark.
+         Bike center-left at this angle. Upper-right is clear open space.
+         dwellTime 5.0s — enough to read 3 stagger children.
+         Approach hold: 0.155–0.205. -->
+    <div class="scene-overlay" data-scene="scene-1">
+      <span class="s1-eyebrow"  data-stagger="0">ApexGears Carbon Series</span>
+      <span class="s1-headline" data-stagger="1">THE<br>APEX.</span>
+      <span class="s1-sub"      data-stagger="2">Carbon. Precision. Speed.</span>
+    </div>
+
+    <!-- Scene 2: scroll 0.56 — t~33s
+         Extreme close-up saddle + seatpost. Subject fills upper-center.
+         Lower-left is the open space. Dark cinematic bg.
+         dwellTime 5.0s. Approach hold: 0.535–0.585. -->
+    <div class="scene-overlay" data-scene="scene-2">
+      <span class="s2-number" data-stagger="0">12</span>
+      <span class="s2-label"  data-stagger="1">Speed. Race-Spec.</span>
+      <span class="s2-sub"    data-stagger="2">SRAM Red AXS.<br>Zero compromise.</span>
+    </div>
+
+    <!-- Scene 3: scroll 0.94 — t~57s
+         Forest environment. Bike left-of-center. Lower-right clear.
+         pointer-events: all — CTA is clickable from hero. -->
+    <div class="scene-overlay" data-scene="scene-3" style="pointer-events:all;">
+      <span class="s3-label" data-stagger="0">The Trail Awaits</span>
+      <a href="#section-buy" class="s3-cta" data-stagger="1">RIDE NOW &#x2192;</a>
+    </div>
+
+    <div id="hero-scroll-hint">Explore</div>
+
+  </section>
+
+  <div id="below-fold">
+
+    <section id="section-carbon">
+      <div class="carbon-heading">
+        <span class="carbon-label gsap-reveal">Technical Specification</span>
+        <h2 class="carbon-title gsap-reveal" data-delay="0.08">BUILT<br>DIFFERENT.</h2>
+      </div>
+      <ul class="spec-list">
+        <li class="spec-item gsap-reveal" data-delay="0.00"><span class="spec-name">Frame</span><span class="spec-value">T800 Carbon Monocoque</span></li>
+        <li class="spec-item gsap-reveal" data-delay="0.05"><span class="spec-name">Weight</span><span class="spec-value">6.8 kg UCI Legal</span></li>
+        <li class="spec-item gsap-reveal" data-delay="0.10"><span class="spec-name">Groupset</span><span class="spec-value">SRAM Red AXS 12-Speed</span></li>
+        <li class="spec-item gsap-reveal" data-delay="0.15"><span class="spec-name">Wheels</span><span class="spec-value">Carbon 50mm Clincher</span></li>
+        <li class="spec-item gsap-reveal" data-delay="0.20"><span class="spec-name">Brakes</span><span class="spec-value">Hydraulic Disc 160/140</span></li>
+        <li class="spec-item gsap-reveal" data-delay="0.25"><span class="spec-name">Geometry</span><span class="spec-value">Race Endurance — 3 sizes</span></li>
+      </ul>
+      <div class="stat-grid">
+        <div class="stat-card gsap-reveal" data-delay="0.10"><span class="stat-num">6.8</span><span class="stat-label">Kilograms — UCI Legal</span></div>
+        <div class="stat-card gsap-reveal" data-delay="0.15"><span class="stat-num">12×</span><span class="stat-label">Speed Drivetrain</span></div>
+        <div class="stat-card gsap-reveal" data-delay="0.20"><span class="stat-num">T800</span><span class="stat-label">Carbon Grade</span></div>
+        <div class="stat-card gsap-reveal" data-delay="0.25"><span class="stat-num">50mm</span><span class="stat-label">Carbon Rim Depth</span></div>
+      </div>
+    </section>
+
+    <section id="section-build">
+      <div class="build-inner">
+        <div class="build-header">
+          <h2 class="build-title gsap-reveal">CONFIGURE<br>YOUR BUILD</h2>
+          <p class="build-sub gsap-reveal">Drag to rotate. Every detail race-engineered.</p>
+        </div>
+        <div class="model-wrap gsap-reveal">
+          <model-viewer src="../assets/3d/mountain_bicycle.glb" auto-rotate camera-controls environment-image="legacy" exposure="0.6" shadow-intensity="1" style="background:transparent;"></model-viewer>
+          <span class="model-label">ApexGears Carbon Series — Interactive Model</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-gears">
+      <div class="gears-copy gsap-reveal">
+        <span class="gears-label">Drivetrain</span>
+        <h3 class="gears-title">ZERO<br>COMPROMISE<br>COMPONENTS.</h3>
+        <p class="gears-body">SRAM Red AXS 12-speed wireless. 10–33 cassette. Power-matched hydraulic brakes. Every gram accounted for — every watt delivered.</p>
+      </div>
+      <div class="gears-model gsap-reveal" data-delay="0.1">
+        <model-viewer src="../assets/3d/bike_gears_cassette.glb" auto-rotate camera-controls environment-image="legacy" exposure="0.65" shadow-intensity="0.8" style="background:transparent;"></model-viewer>
+      </div>
+    </section>
+
+    <section id="section-buy">
+      <span class="buy-label gsap-reveal">Own the Apex</span>
+      <h2 class="buy-headline gsap-reveal">TAKE THE<br>TRAIL.</h2>
+      <div class="buy-actions gsap-reveal">
+        <a href="#" class="btn-primary"><span>Configure &amp; Buy</span></a>
+        <a href="#section-build" class="btn-secondary">View Build</a>
+      </div>
+    </section>
+
+    <footer id="footer">
+      <a href="#" class="footer-brand">ApexGears</a>
+      <ul class="footer-links">
+        <li><a href="#">Bikes</a></li>
+        <li><a href="#">Components</a></li>
+        <li><a href="#">Apparel</a></li>
+        <li><a href="#">Dealers</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 ApexGears</span>
+    </footer>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       GSAP CONFIG — ApexGears v2 (prompt-informed videoMap)
+       ──────────────────────────────────────────────────────────────
+       v2 changes from v1:
+         scrollBudget 500% → 700% (complex video needs room)
+         videoMap rebuilt from AI generation prompts (14 anchors)
+         waypoints expanded [0.38, 0.44, 0.50, 0.73] — dam around fast segment
+         scene positions corrected from prompt+keyframe camera knowledge
+         dwellTime 4.5 → 5.0 (more room per scene)
+         approachTolerance 0.035 → 0.025 (scenes are closer together)
+         fadeRange 0.18 → 0.12 (tighter fade, scenes are denser)
+
+       Prompt-informed timeline:
+         t0–16s:  Studio orbit white bg (SLOW) — 30% scroll budget
+         t16–22s: Orbit complete + bg white→black transition (MEDIUM) — 8%
+         t22–28s: Push-in + bike explodes to component layout (MEDIUM) — 8%
+         t28–30s: FAST reassembly sequence ← 2% scroll, walls on each side
+         t30–47s: 4 slow detail shots (cassette, saddle, frame, fork) — 25%
+         t47–57s: Pull-back to full side profile hero (SLOW) — 15%
+         t57–60s: Forest environment CTA (SLOW) — 12%
+  ══════════════════════════════════════════════════════════════ -->
+  <script>
+  window.GSAP_CONFIG = {
+    frameSrc:   '../assets/images/frames/',
+    frameCount: 894,   // 15fps × ~59.6s
+    fps:        15,
+
+    dwellTime:         5.0,   // 5s — longer for complex reading at each scene
+    approachTolerance: 0.025, // ±2.5% of scene.scroll → opacity 1
+
+    videoSrc:   '../assets/video/ImprovedVersion_Bicycle.mp4',
+
+    videoDuration: 65.7,
+
+    scrollBudget: '700%',   // was 500% — this video needs much more scroll room
+    fadeRange:    0.12,
+    // [v5.2.4] Cap only extreme scroll jumps (fling/Page Down). Default 0.10.
+    // maxProgressJump: 0.10,
+
+    snapToScenes: true,
+    snapDelay:    0.15,
+
+    // Dense waypoints — critical for controlling the fast assembly segment
+    // 0.38 = before disassembly starts (pause, see full bike)
+    // 0.44 = end of fast assembly (pause, see reassembled bike before detail shots)
+    // 0.50 = between cassette and saddle detail shots
+    // 0.73 = before pull-back hero reveal
+    waypoints: [0.38, 0.44, 0.50, 0.73],
+
+    // Snap points: 0→0.18→0.38→0.44→0.50→0.56→0.73→0.94→1.0
+
+    // Prompt-informed videoMap — 14 anchors
+    // Slow segments = wider scroll gap. Fast = narrow. Hard cuts = waypoint.
+    videoMap: [
+      { scroll: 0.00, time: 0.0,  label: 'orbit-front-white'   },  // front-facing, white studio
+      { scroll: 0.18, time: 10.0, label: 'orbit-3q-side'        },  // 3/4 side, bg transitioning
+      { scroll: 0.30, time: 16.5, label: 'dark-full-profile'    },  // black bg revealed, full side
+      { scroll: 0.38, time: 22.0, label: 'push-in-start'        },  // camera pushes in
+      { scroll: 0.44, time: 26.0, label: 'fast-reassembly'      },  // FAST — narrow budget
+      { scroll: 0.50, time: 28.2, label: 'macro-cassette'       },  // rear drivetrain close-up
+      { scroll: 0.56, time: 32.9, label: 'macro-saddle'         },  // saddle/seatpost close-up
+      { scroll: 0.63, time: 37.0, label: 'macro-frame-body'     },  // carbon frame structure
+      { scroll: 0.69, time: 41.1, label: 'macro-handlebars'     },  // cockpit close-up
+      { scroll: 0.75, time: 47.0, label: 'macro-front-fork'     },  // front fork + wheel
+      { scroll: 0.83, time: 51.0, label: 'pullback-begins'      },  // camera retreats
+      { scroll: 0.88, time: 54.0, label: 'full-profile-dark'    },  // complete bike, dark bg
+      { scroll: 0.94, time: 57.0, label: 'forest-environment'   },  // bike in forest
+      { scroll: 1.00, time: 65.7, label: 'finale'               }
+    ],
+
+    scenes: [
+      { id: 'scene-1', scroll: 0.18 },  // mid-orbit, transitioning bg, upper-right
+      { id: 'scene-2', scroll: 0.56 },  // saddle macro, lower-left
+      { id: 'scene-3', scroll: 0.94 }
+    ]
+  };
+
+  // To extract remaining frames (895-985):
+  // cd assets/images/frames && ffmpeg -ss 59.6
+  //   -i "../video/ImprovedVersion_Bicycle.mp4"
+  //   -vf fps=15 -vsync vfr -q:v 3
+  //   -start_number 895 frame_%03d.jpg
+  // Then set frameCount: 985
+  </script>
+
+  <script>
+  (function() {
+    const loader = document.getElementById('hero-frame-loader');
+    if (!loader) return;
+    const pctEl = loader.querySelector('.loader-pct');
+    if (!pctEl) return;
+    const obs = new MutationObserver(() => {
+      const match = loader.textContent.match(/(\d+)%/);
+      if (match) { pctEl.textContent = match[1]+'%'; loader.style.setProperty('--pct', match[1]+'%'); }
+    });
+    obs.observe(loader, { childList: true, subtree: true, characterData: true });
+  })();
+  </script>
+
+      <script>
+// ============================================================
+// ENGINE START — scroll-gsap.js v5.2.4
+// DO NOT MODIFY — copy verbatim between ENGINE START / ENGINE END
+// Requires: GSAP + ScrollTrigger loaded before this script
+// Config:   window.GSAP_CONFIG defined before this script
+// Changelog: engine/CHANGELOG.md
+//
+// v5.2.2 patches:
+//   1. scrub: true for canvas mode — eliminates post-scroll animation tail.
+//      Video no longer "plays" for milliseconds after scroll stops.
+//      Number scrub (smoothing) only applies to video fallback mode.
+//   2. Approach hold — within approachTolerance of a scene.scroll,
+//      text opacity = 1 unconditionally. No dwell required. Text appears
+//      as user approaches the scene and holds through snap + dwell.
+//   3. Near-instant snap — duration { min: 0.02, max: 0.04 }.
+//      Snap completes in <40ms; frame animation during snap is invisible.
+//      snapInProgress flag freezes frame at snap start, jumps to
+//      destination on complete.
+//   4. dwellTime default raised to 4.0s.
+//   5. Children (data-stagger) now also get approach hold.
+// ============================================================
+(function () {
+  'use strict';
+
+  // ── GSAP_CONFIG shape (v5.2.2) ────────────────────────────────────────────
+  // window.GSAP_CONFIG = {
+  //
+  //   // Frame-by-frame (v5.2 primary)
+  //   frameSrc:    "../assets/images/frames/",
+  //   frameCount:  241,
+  //   fps:         30,          // for reference only; engine uses frameCount
+  //
+  //   // Video fallback
+  //   videoSrc:    "../assets/video/filename.mp4",
+  //
+  //   scrollBudget:     "450%",
+  //   scrubSmooth:      1,       // VIDEO fallback only. Canvas always uses scrub:true.
+  //   fadeRange:        0.18,    // fade curve AFTER approach/dwell zone
+  //   approachTolerance: 0.035,  // within this of scene.scroll → opacity 1
+  //   dwellTime:        4.0,     // seconds text holds after snap
+  //
+  //   snapToScenes:  true,
+  //   snapDelay:     0.15,
+  //
+  //   waypoints: [0.45, 0.60],
+  //
+  //   // [v5.2.4] Extreme value clamp (optional, default 0.10)
+  //   maxProgressJump: 0.10,  // max progress delta per RAF frame
+  //                           // only fires on extreme flings / Page Down
+  //   // videoDuration auto-detected from video.duration; no config needed
+  //
+  //   videoMap: [ ... ],
+  //   scenes:   [ ... ]
+  // };
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const cfg = window.GSAP_CONFIG;
+  if (!cfg) { console.error('[scroll-gsap] window.GSAP_CONFIG not found'); return; }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // [v5.2.4] Auto-detect video duration via hidden probe element.
+  // Reads video.duration from loadedmetadata — no cfg.videoDuration needed.
+  // mapToVideoTime() picks this up as soon as metadata is ready (~1-2s).
+  let detectedVideoDuration = null;
+  (function probeVideoDuration() {
+    if (!cfg.videoSrc) return;
+    var probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.muted   = true;
+    probe.src     = cfg.videoSrc;
+    probe.addEventListener('loadedmetadata', function() {
+      detectedVideoDuration = probe.duration;
+      probe.removeAttribute('src');
+      probe.load(); // release resource
+    }, { once: true });
+  })();
+
+  const heroSection = document.getElementById('hero-section');
+  const progressBar = document.getElementById('hero-progress');
+  const scrollHint  = document.getElementById('hero-scroll-hint');
+  const nav         = document.getElementById('hero-nav');
+
+  // ── Mode detection ────────────────────────────────────────────────────────
+  const useFrames = !!(cfg.frameSrc && cfg.frameCount);
+  let   canvas, ctx, frames = [], framesLoaded = 0;
+  let   video;
+  let   st = null;           // ScrollTrigger reference
+  let   snapInProgress    = false;
+  let   snapDestProgress  = null;
+  let   displayProgress   = 0;   // [v5.2.4] canvas draw position (extreme-value clamped)
+  let   targetProgress    = 0;   // [v5.2.4] real scroll position from ST
+
+  // ── Frame preloader ───────────────────────────────────────────────────────
+  function preloadFrames(onReady) {
+    canvas = document.getElementById('hero-canvas');
+    ctx    = canvas ? canvas.getContext('2d') : null;
+    const loader = document.getElementById('hero-frame-loader');
+
+    if (!canvas || !ctx) {
+      initVideoFallback(onReady);
+      return;
+    }
+
+    canvas.style.opacity = '0';
+
+    function resize() {
+      canvas.width  = heroSection.offsetWidth;
+      canvas.height = heroSection.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', () => {
+      resize();
+      if (st && !snapInProgress) drawFrame(st.progress);
+    });
+
+    const total = cfg.frameCount;
+    const pad   = String(total).length;
+    const ext   = cfg.frameExt || 'jpg';
+
+    for (let i = 1; i <= total; i++) {
+      const img = new Image();
+      img.src   = cfg.frameSrc + 'frame_' + String(i).padStart(pad, '0') + '.' + ext;
+      img.onload = () => {
+        framesLoaded++;
+        if (loader) {
+          const pct = Math.round(framesLoaded / total * 100);
+          loader.textContent = pct + '%';
+          loader.style.setProperty('--pct', pct + '%');
+        }
+        if (framesLoaded === total) {
+          if (loader) {
+            gsap.to(loader, { opacity: 0, duration: 0.4, onComplete: () => {
+              loader.style.display = 'none';
+              gsap.to(canvas, { opacity: 1, duration: 0.4 });
+            }});
+          } else {
+            gsap.to(canvas, { opacity: 1, duration: 0.3 });
+          }
+          onReady();
+        }
+      };
+      img.onerror = () => { framesLoaded++; if (framesLoaded === total) onReady(); };
+      frames.push(img);
+    }
+  }
+
+  // ── Draw frame ────────────────────────────────────────────────────────────
+  function drawFrame(progress) {
+    if (!ctx || !frames.length) return;
+    const idx = Math.min(frames.length - 1, Math.round(progress * (frames.length - 1)));
+    const f   = frames[idx];
+    if (f && f.complete && f.naturalWidth) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const vR = f.naturalWidth  / f.naturalHeight;
+      const cR = canvas.width    / canvas.height;
+      let sw, sh, sx, sy;
+      if (vR > cR) { sh = canvas.height; sw = sh * vR; sx = (canvas.width - sw) / 2; sy = 0; }
+      else         { sw = canvas.width;  sh = sw / vR; sx = 0; sy = (canvas.height - sh) / 2; }
+      ctx.drawImage(f, sx, sy, sw, sh);
+    }
+  }
+
+  // ── Video fallback ────────────────────────────────────────────────────────
+  function initVideoFallback(onReady) {
+    video = document.getElementById('hero-video');
+    if (video) {
+      video.addEventListener('loadedmetadata', () => {
+        video.play().then(() => video.pause()).catch(() => {});
+        onReady();
+      });
+      if (video.readyState >= 1) onReady();
+    } else { onReady(); }
+  }
+
+  // ── videoMap interpolation ────────────────────────────────────────────────
+  // [v5.2.3] cfg.videoDuration overrides the last videoMap entry's time.
+  // Fixes "video stops N seconds early" when frame extraction was incomplete.
+  function mapToVideoTime(progress) {
+    const map = cfg.videoMap;
+    if (!map || !map.length) return 0;
+    if (progress <= map[0].scroll) return map[0].time;
+    const last = map[map.length - 1];
+    if (progress >= last.scroll) {
+      // Use auto-detected duration, then cfg.videoDuration, then last anchor time
+      const fullDuration = detectedVideoDuration || cfg.videoDuration || last.time;
+      if (fullDuration > last.time && last.scroll < 1) {
+        const t = (progress - last.scroll) / (1 - last.scroll);
+        return last.time + t * (fullDuration - last.time);
+      }
+      return fullDuration;
+    }
+    for (let i = 0; i < map.length - 1; i++) {
+      const a = map[i], b = map[i + 1];
+      if (progress >= a.scroll && progress <= b.scroll) {
+        const t = (progress - a.scroll) / (b.scroll - a.scroll);
+        return a.time + t * (b.time - a.time);
+      }
+    }
+    return 0;
+  }
+
+  // ── Dwell system ──────────────────────────────────────────────────────────
+  const dwellState   = {};
+  const dwellSeconds = cfg.dwellTime !== undefined ? cfg.dwellTime : 4.0;
+
+  function onSnapEngaged(progress) {
+    if (progress === undefined || progress === null) return;
+    const scenes    = cfg.scenes || [];
+    const tolerance = 0.025;
+    scenes.forEach(scene => {
+      if (Math.abs(progress - scene.scroll) < tolerance) {
+        dwellState[scene.id] = { dwellEnd: performance.now() + dwellSeconds * 1000 };
+      }
+    });
+  }
+
+  // ── Scene opacity ─────────────────────────────────────────────────────────
+  // v5.2.2: Approach hold — near a scene, opacity = 1 regardless of dwell.
+  // Ensures text is visible as the user arrives AND holds through snap+dwell.
+  function updateScenes(progress) {
+    const fadeRange         = cfg.fadeRange         || 0.18;
+    const approachTolerance = cfg.approachTolerance || 0.035;
+    const now               = performance.now();
+
+    (cfg.scenes || []).forEach(scene => {
+      const el = document.querySelector(`[data-scene="${scene.id}"]`);
+      if (!el) return;
+
+      const dist       = Math.abs(progress - scene.scroll);
+      const isApproach = dist < approachTolerance;
+      const dwell      = dwellState[scene.id];
+      const isDwelling = dwell && now < dwell.dwellEnd;
+
+      // Approach hold + dwell both force opacity 1
+      const opacity = (isApproach || isDwelling)
+        ? 1
+        : Math.max(0, 1 - dist / fadeRange);
+
+      el.style.opacity = opacity;
+
+      const children = el.querySelectorAll('[data-stagger]');
+      children.forEach(child => {
+        const lag    = parseFloat(child.dataset.stagger || 0) * 0.010;
+        const delayed = Math.max(0, dist - lag);
+        const childOp = (isApproach || isDwelling)
+          ? 1
+          : Math.max(0, 1 - delayed / fadeRange);
+        child.style.opacity = childOp;
+      });
+    });
+  }
+
+  // ── Build snap points ─────────────────────────────────────────────────────
+  function buildSnapPoints() {
+    if (!cfg.snapToScenes) return false;
+
+    const sceneScrolls    = (cfg.scenes    || []).map(s => s.scroll);
+    const waypointScrolls = (cfg.waypoints || []);
+    const allPoints       = [0, ...sceneScrolls, ...waypointScrolls, 1];
+
+    const seen = new Set();
+    const points = allPoints
+      .map(p => Math.round(p * 1000) / 1000)
+      .filter(p => { if (seen.has(p)) return false; seen.add(p); return true; })
+      .sort((a, b) => a - b);
+
+    return {
+      snapTo:   points,
+      // [v5.2.2] Near-instant snap — <40ms. Frame animation during snap is invisible.
+      duration: { min: 0.02, max: 0.04 },
+      delay:    cfg.snapDelay !== undefined ? cfg.snapDelay : 0.15,
+      ease:     'none',
+      onStart: () => {
+        // Freeze frame at snap start — prevents "video plays" during snap ease
+        snapInProgress = true;
+        if (st) {
+          // Find nearest snap point = destination
+          const p = st.progress;
+          snapDestProgress = points.reduce((a, b) =>
+            Math.abs(b - p) < Math.abs(a - p) ? b : a
+          );
+          drawFrame(snapDestProgress);
+        }
+      },
+      onComplete: () => {
+        snapInProgress   = false;
+        snapDestProgress = null;
+        if (st) {
+          // Sync display state to real progress after snap lands
+          displayProgress = st.progress;
+          targetProgress  = st.progress;
+          drawFrame(st.progress);
+          onSnapEngaged(st.progress);
+        }
+      }
+    };
+  }
+
+  // ── Init ScrollTrigger ────────────────────────────────────────────────────
+  function initScrollTrigger() {
+    st = ScrollTrigger.create({
+      trigger: heroSection,
+      start:   'top top',
+      end:     `+=${cfg.scrollBudget || '450%'}`,
+      pin:     true,
+
+      // [v5.2.2] Canvas: scrub:true = direct sync, zero lag.
+      // Video fallback: use scrubSmooth (default 1s).
+      scrub: useFrames
+        ? true
+        : (cfg.scrubSmooth !== undefined ? cfg.scrubSmooth : 1),
+
+      snap:     buildSnapPoints(),
+
+      onUpdate: (self) => {
+        // [v5.2.4] Canvas: update targetProgress only. GSAP ticker handles
+        // drawFrame with optional extreme-value clamp. Video: direct update.
+        targetProgress = self.progress;
+        if (!snapInProgress) {
+          if (!useFrames && video) {
+            video.currentTime = mapToVideoTime(self.progress);
+          }
+        }
+        updateScenes(self.progress);
+        if (progressBar) progressBar.style.width = (self.progress * 100) + '%';
+        if (scrollHint)  scrollHint.style.opacity = self.progress < 0.04 ? 1 : 0;
+      }
+    });
+
+    // Below-fold reveals
+    document.querySelectorAll('.gsap-reveal').forEach(el => {
+      const delay = parseFloat(el.dataset.delay || 0);
+      gsap.fromTo(el,
+        { opacity: 0, y: 60 },
+        {
+          opacity: 1, y: 0, duration: 1, delay, ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' }
+        }
+      );
+    });
+
+    // [v5.2.4] GSAP ticker — advances displayProgress toward targetProgress
+    // at max maxProgressJump per frame. Normal scroll: delta < jump → instant.
+    // Extreme fling (Page Down, momentum): delta > jump → capped advance.
+    // Ticker keeps running between scroll events so display always catches up.
+    if (useFrames) {
+      var maxJump = cfg.maxProgressJump !== undefined ? cfg.maxProgressJump : 0.10;
+      gsap.ticker.add(function() {
+        if (snapInProgress) return; // snap manages its own drawing
+        var delta = targetProgress - displayProgress;
+        var absDelta = delta < 0 ? -delta : delta;
+        if (absDelta > 0.0005) {
+          if (absDelta > maxJump) {
+            displayProgress += (delta > 0 ? 1 : -1) * maxJump;
+          } else {
+            displayProgress = targetProgress;
+          }
+          drawFrame(displayProgress);
+        }
+      });
+    }
+
+    // Navbar
+    if (nav) {
+      ScrollTrigger.create({
+        trigger: heroSection,
+        start:   'top top',
+        end:     `+=${cfg.scrollBudget || '450%'}`,
+        onUpdate: (self) => { nav.classList.toggle('nav-scrolled', self.progress > 0.05); }
+      });
+    }
+  }
+
+
+  // ── Start ─────────────────────────────────────────────────────────────────────────
+  if (useFrames) {
+    preloadFrames(initScrollTrigger);
+  } else {
+    initVideoFallback(initScrollTrigger);
+  }
+
+})();
+// ENGINE END — scroll-gsap.js v5.2.4
+// ============================================================
+
+  </script>
+
+  <script>
+  (function() {
+    const dot = document.getElementById('cursor-dot'), ring = document.getElementById('cursor-ring');
+    if (dot && ring) {
+      let mx = 0, my = 0;
+      document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+      gsap.ticker.add(() => {
+        gsap.set(dot, { x: mx, y: my });
+        gsap.to(ring, { x: mx, y: my, duration: 0.16, ease: 'power2.out' });
+      });
+      document.querySelectorAll('a, button, .stat-card').forEach(el => {
+        el.addEventListener('mouseenter', () => gsap.to(ring, { width: 52, height: 52, borderColor: 'rgba(168,255,62,0.7)', duration: 0.22 }));
+        el.addEventListener('mouseleave', () => gsap.to(ring, { width: 32, height: 32, borderColor: 'rgba(168,255,62,0.35)', duration: 0.22 }));
+      });
+    }
+
+    document.querySelectorAll('.spec-item').forEach(item => {
+      const name = item.querySelector('.spec-name'), val = item.querySelector('.spec-value');
+      item.addEventListener('mouseenter', () => { gsap.to(name, { x: 6, duration: 0.22 }); gsap.to(val, { x: -6, duration: 0.22 }); });
+      item.addEventListener('mouseleave', () => { gsap.to(name, { x: 0, duration: 0.22 }); gsap.to(val, { x: 0, duration: 0.22 }); });
+    });
+
+    document.querySelectorAll('.stat-card').forEach(card => {
+      card.addEventListener('mouseenter', () => gsap.to(card, { y: -4, duration: 0.25, ease: 'power2.out' }));
+      card.addEventListener('mouseleave', () => gsap.to(card, { y: 0,  duration: 0.25 }));
+    });
+
+    const navBrand = document.querySelector('.nav-brand');
+    if (navBrand) {
+      navBrand.addEventListener('mouseenter', () => gsap.to(navBrand, { letterSpacing: '0.25em', duration: 0.3 }));
+      navBrand.addEventListener('mouseleave', () => gsap.to(navBrand, { letterSpacing: '0.18em', duration: 0.3 }));
+    }
+
+    const buyHead = document.querySelector('.buy-headline');
+    if (buyHead) gsap.fromTo(buyHead, { scale: 0.86, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.4, ease: 'expo.out', scrollTrigger: { trigger: buyHead, start: 'top 82%', toggleActions: 'play none none reverse' } });
+
+    gsap.fromTo('.footer-links a', { opacity: 0, y: 8 }, { opacity: 1, y: 0, stagger: 0.07, duration: 0.6, ease: 'power2.out', scrollTrigger: { trigger: '#footer', start: 'top 92%' } });
+
+    if (location.protocol === 'file:') console.warn('[ApexGears] GLBs need a local server. Run START SERVER.bat.');
+  })();
+  </script>
+
+</body>
+</html>

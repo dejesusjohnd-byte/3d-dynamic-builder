@@ -1,21 +1,21 @@
 # 3D Dynamic Builder — Version Report
-**Latest pipeline:** V4 (active)  
-**Previous:** V3 (archived, do not use for new builds)  
-**Date last updated:** June 2026
+**Latest pipeline:** V5 (active)  
+**Previous:** V4 (archived, reference only)  
+**Date last updated:** 2026-06-29
 
 ---
 
 ## Quick Start for New Contributors
 
 **Read these in order before touching any code:**
-1. `v4/SESSION_INIT.md` — build steps Claude must follow
-2. `v4/OPERATOR_GUIDE.md` — human-facing guide, GLB handling, all gotchas
-3. `v4/builds/Bike Breakdown/SESSION_TRANSFER.md` — full lesson log from latest build
+1. `v5 (Learning environment)/SESSION_INIT.md` — build steps, failure patterns, engine rules
+2. `v5 (Learning environment)/engine/CHANGELOG.md` — engine version history
+3. `PIPELINE_ACTIVITY.md` — session-by-session audit trail
 
-**To run the latest build locally:**
-1. Open `v4/builds/Bike Breakdown/`
+**To run a build locally:**
+1. Open the build folder (e.g. `v5 (Learning environment)/builds/VereHomes2/`)
 2. Double-click `START SERVER.bat`
-3. Browser opens to `http://localhost:8080/index-v3.html`
+3. Navigate to `http://localhost:8080/output/index.html`
 
 ---
 
@@ -23,30 +23,50 @@
 
 | Version | Status | Key Files | Notes |
 |---------|--------|-----------|-------|
-| V4 | ✅ ACTIVE | `v4/SESSION_INIT.md`, `v4/OPERATOR_GUIDE.md` | Current pipeline. All new builds start here. |
-| V3 | ⚠️ Archived | `v3/` folder | Superseded by V4. Reference only — do not start new builds from V3 files. |
-| V2 | ❌ Deprecated | `v2/` folder | Early component experiments. Not compatible with current pipeline. |
-| V1 | ❌ Deprecated | `v1/` folder | Original prototype. Do not use. |
+| V5 | ✅ ACTIVE | `v5 (Learning environment)/SESSION_INIT.md` | Canvas frame-by-frame engine, GSAP snap+dwell. All new builds start here. |
+| V4 | ⚠️ Archived | `archive/v4/` | Superseded by V5. Reference only. |
+| V3 | ❌ Deprecated | `v3/` | Do not use. |
+| V2 | ❌ Deprecated | `v2/` | Do not use. |
+| V1 | ❌ Deprecated | `v1/` | Do not use. |
 
 ---
 
-## Active Builds (V4)
+## Active Engine
 
-| Build | File | Status | Notes |
-|-------|------|--------|-------|
-| TrailBound — Bike Breakdown | `v4/builds/Bike Breakdown/index-v3.html` | ✅ Active | 17MB, 3D carousel + hero scrub |
-| Aether — Particle Dissolution | `v4/builds/Particle Dissolution/index.html` | ✅ Complete | Particle hero build |
+**scroll-gsap.js v5.2.5** — `v5 (Learning environment)/engine/scroll-gsap.js`
+
+| Feature | Status |
+|---------|--------|
+| Canvas frame-by-frame scrub | ✅ |
+| GSAP ScrollTrigger pin | ✅ |
+| Snap to scenes + waypoints | ✅ |
+| Approach hold + dwell timer | ✅ |
+| Video duration auto-detect | ✅ |
+| Video fallback mode | ✅ |
+| Below-fold gsap-reveal | ✅ |
+
+> **Rule:** Engine must always be inlined in the HTML output. External src breaks the local server path. See SESSION_INIT.md for details.
 
 ---
 
-## V4 Pipeline Summary
+## Active Builds (V5)
 
-V4 strips the pipeline to two documents Claude reads per build (SESSION_INIT + REQUIREMENTS), with a mandatory written Frame Log before any HTML. This prevents Claude from defaulting to templated output.
+| Build | File | Engine | Status | Notes |
+|-------|------|--------|--------|-------|
+| VereHomes2 | `v5 (Learning environment)/builds/VereHomes2/output/index.html` | v5.2.5 inline | ✅ Active | Canvas, 361 frames, luxury real estate |
+| VereHomes | `v5 (Learning environment)/builds/VereHomes/output/index-v1.html` | v5.2.4 | ✅ Complete | Video mode, luxury real estate |
+| TrailBound (ApexGears) | `v5 (Learning environment)/builds/TrailBound/output/index-v4.html` | v5.2.4 inline | ✅ Complete | Canvas, 894 frames, bike brand |
+| Papa's Burger | `v5 (Learning environment)/builds/Papas Burger/output/index-v7.html` | v5.2.2 | ✅ Complete | Canvas, food brand |
 
-Key improvements over V3:
-- Frame Log is a required written deliverable, not a verbal discussion
-- Colors extracted from actual video frames, not preset palettes
-- Text position driven by actual negative space in each frame
-- Testable requirements checklist (binary pass/fail)
-- 3D model-viewer support with full GLB handling guide
-- Loading screen pattern for sites with heavy assets
+---
+
+## V5 Pipeline Summary
+
+V5 replaces video.currentTime scrub with frame-by-frame canvas rendering, eliminating codec lag and post-scroll playback artifacts. Text display uses a snap+dwell system guaranteeing minimum read time regardless of scroll speed.
+
+Key improvements over V4:
+- Frame-by-frame canvas (zero codec lag)
+- Snap-to-scene with guaranteed dwell time
+- Non-linear videoMap from motion analysis data
+- setup.py auto-extracts keyframes + frames + motion profile
+- Engine is a single inlineable JS block — no build tools needed

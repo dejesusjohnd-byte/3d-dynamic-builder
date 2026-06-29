@@ -1,5 +1,11 @@
-# Removed — never used in any build
-v4/builds/Bike Breakdown/references/free_dirt_road_through_forest.glb
-
-# Videos — too large for git, store separately
+# Binary assets — too large or unnecessary in git
+# Store locally; assets travel with the project folder, not the repo
 *.mp4
+*.mov
+*.webm
+*.glb
+*.gltf
+*.fbx
+
+# macOS
+.DS_Store

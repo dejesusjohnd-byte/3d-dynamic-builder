@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VeraHomes — Find Your Space</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #0e0c09;
+      --surface:  #1a1714;
+      --accent:   #c8a96a;
+      --accent-lt:#e5d4aa;
+      --text:     #f5efe6;
+      --muted:    rgba(245,239,230,0.32);
+      --rule:     rgba(245,239,230,0.07);
+      --loader-bg:#f8f4ef;
+      --font-serif: 'Cormorant Garamond', serif;
+      --font-sans:  'DM Sans', sans-serif;
+    }
+
+    html { scroll-behavior: auto; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-sans); overflow-x: hidden; cursor: none; }
+
+    /* Custom cursor */
+    #cursor-dot  { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9999; transform: translate(-50%,-50%); transition: transform 0.15s; }
+    #cursor-ring { width: 28px; height: 28px; border: 1px solid rgba(200,169,106,0.4); border-radius: 50%; position: fixed; pointer-events: none; z-index: 9998; transform: translate(-50%,-50%); }
+
+    /* ── Hero ── */
+    #hero-section { position: relative; width: 100%; height: 100vh; overflow: hidden; background: var(--bg); }
+
+    #hero-video {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    #hero-video.ready { opacity: 1; }
+
+    /* Cinematic overlay — warm vignette */
+    #hero-overlay {
+      position: absolute; inset: 0; z-index: 2;
+      background:
+        radial-gradient(ellipse at center, transparent 30%, rgba(14,12,9,0.55) 100%),
+        linear-gradient(to top, rgba(14,12,9,0.7) 0%, transparent 40%),
+        linear-gradient(to bottom, rgba(14,12,9,0.35) 0%, transparent 25%);
+    }
+
+    /* Loader */
+    #hero-loader {
+      position: absolute; inset: 0; z-index: 60;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--loader-bg); gap: 20px;
+    }
+    .loader-brand  { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 300; letter-spacing: 0.35em; color: #1a1714; }
+    .loader-line   { width: 60px; height: 1px; background: #c8a96a; animation: loaderLine 1.8s ease-in-out infinite; }
+    .loader-sub    { font-family: var(--font-sans); font-size: 0.5rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(26,23,20,0.3); }
+    @keyframes loaderLine { 0%,100%{ transform: scaleX(0.2); opacity: 0.3; } 50%{ transform: scaleX(1); opacity: 1; } }
+
+    /* Progress */
+    #hero-progress-wrap { position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: rgba(200,169,106,0.1); z-index: 10; }
+    #hero-progress { height: 100%; width: 0%; background: var(--accent); transition: width 0.05s; }
+
+    /* Navbar */
+    #hero-nav { position: absolute; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 32px 52px; }
+    #hero-nav.scrolled { background: rgba(14,12,9,0.88); backdrop-filter: blur(18px); padding: 20px 52px; transition: all 0.4s; }
+    .nav-brand { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 300; letter-spacing: 0.2em; color: var(--text); text-decoration: none; }
+    .nav-links  { display: flex; gap: 40px; list-style: none; }
+    .nav-links a { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.25s; }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-cta { font-family: var(--font-sans); font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--bg); background: var(--accent); padding: 10px 28px; text-decoration: none; transition: background 0.25s; }
+    .nav-cta:hover { background: var(--accent-lt); }
+
+    /* ── Scene overlays ── */
+    .scene-overlay { position: absolute; pointer-events: none; opacity: 0; z-index: 15; }
+
+    /* Scene 1 — upper right — t~4s, establishing exterior
+       Camera: wide angle. Text reads against sky / upper right.
+       Luxurious, simple headline. */
+    [data-scene="scene-1"] { top: 12%; right: 7%; text-align: right; max-width: 38%; }
+    .s1-label { display: block; font-family: var(--font-sans); font-size: 0.5rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
+    .s1-title { display: block; font-family: var(--font-serif); font-weight: 300; font-size: clamp(3.8rem, 7vw, 8rem); line-height: 0.9; letter-spacing: 0.02em; color: var(--text); }
+    .s1-title em { font-style: italic; color: var(--accent-lt); }
+    .s1-sub   { display: block; font-family: var(--font-sans); font-size: 0.58rem; font-weight: 300; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-top: 20px; line-height: 1.9; }
+
+    /* Scene 2 — lower left — t~12s, interior main living space
+       Camera: room interior. Text reads against lower left floor/wall area. */
+    [data-scene="scene-2"] { bottom: 12%; left: 7%; max-width: 34%; }
+    .s2-label { display: block; font-family: var(--font-sans); font-size: 0.5rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+    .s2-number{ display: block; font-family: var(--font-serif); font-weight: 300; font-size: clamp(4rem, 8vw, 9rem); line-height: 1; color: var(--text); }
+    .s2-unit  { display: block; font-family: var(--font-serif); font-weight: 300; font-size: clamp(1rem, 1.8vw, 1.6rem); letter-spacing: 0.08em; color: var(--accent-lt); margin-top: -4px; }
+    .s2-sub   { display: block; font-family: var(--font-sans); font-size: 0.55rem; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 14px; line-height: 1.8; }
+
+    /* Scene 3 — lower right — t~18s, final room / CTA
+       Warm closing shot. CTA button. pointer-events on. */
+    [data-scene="scene-3"] { bottom: 12%; right: 7%; text-align: right; pointer-events: all; }
+    .s3-label { display: block; font-family: var(--font-serif); font-size: clamp(1.8rem, 3vw, 3rem); font-weight: 300; font-style: italic; color: var(--accent-lt); margin-bottom: 22px; line-height: 1.1; }
+    .s3-cta   { display: inline-block; font-family: var(--font-sans); font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--bg); background: var(--accent); padding: 14px 38px; text-decoration: none; transition: background 0.3s; }
+    .s3-cta:hover { background: var(--accent-lt); }
+
+    /* Scroll hint */
+    #hero-scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); z-index: 15; text-align: center; }
+    .hint-text { font-family: var(--font-sans); font-size: 0.45rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(200,169,106,0.4); display: block; margin-bottom: 12px; }
+    .hint-line { display: block; width: 1px; height: 36px; background: linear-gradient(to bottom, rgba(200,169,106,0.5), transparent); margin: 0 auto; animation: lineDown 2s ease-in-out infinite; }
+    @keyframes lineDown { 0%,100%{ opacity: 0.3; transform: scaleY(0.5); transform-origin: top; } 50%{ opacity: 1; transform: scaleY(1); } }
+
+    /* ── Below fold ── */
+    #below-fold { background: var(--bg); }
+
+    /* Section: Feature intro */
+    #section-intro { padding: 120px 80px; max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 100px; align-items: end; }
+    .intro-text { }
+    .intro-label { display: block; font-family: var(--font-sans); font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-bottom: 24px; }
+    .intro-title { font-family: var(--font-serif); font-weight: 300; font-size: clamp(2.8rem, 5vw, 5.5rem); line-height: 1.05; color: var(--text); }
+    .intro-title em { font-style: italic; color: var(--accent-lt); }
+    .intro-body { font-family: var(--font-sans); font-size: 0.75rem; font-weight: 300; line-height: 2; color: var(--muted); max-width: 380px; margin-top: 28px; }
+    .intro-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); }
+    .stat-card { background: var(--bg); padding: 40px 32px; }
+    .stat-card:hover { background: var(--surface); }
+    .stat-num   { display: block; font-family: var(--font-serif); font-weight: 300; font-size: 3.2rem; color: var(--accent); line-height: 1; }
+    .stat-label { display: block; font-family: var(--font-sans); font-size: 0.5rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-top: 10px; line-height: 1.7; }
+
+    /* Section: Features list */
+    #section-features { border-top: 1px solid var(--rule); max-width: 1280px; margin: 0 auto 0; padding: 100px 80px; }
+    .features-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 64px; }
+    .features-title { font-family: var(--font-serif); font-weight: 300; font-size: clamp(2rem, 4vw, 4rem); color: var(--text); }
+    .features-count { font-family: var(--font-serif); font-size: 0.85rem; color: var(--accent); letter-spacing: 0.1em; }
+    .feature-list { list-style: none; }
+    .feature-item { display: grid; grid-template-columns: 3fr 1fr; align-items: center; padding: 26px 0; border-bottom: 1px solid var(--rule); transition: padding-left 0.35s; }
+    .feature-item:hover { padding-left: 12px; }
+    .feature-name { font-family: var(--font-serif); font-size: clamp(1.2rem, 2vw, 1.8rem); font-weight: 300; color: var(--text); }
+    .feature-detail { font-family: var(--font-sans); font-size: 0.55rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); text-align: right; }
+
+    /* Section: Location */
+    #section-location { background: var(--surface); padding: 120px 80px; }
+    .location-inner { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: 80px; align-items: center; }
+    .loc-label { display: block; font-family: var(--font-sans); font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); margin-bottom: 24px; }
+    .loc-title { font-family: var(--font-serif); font-weight: 300; font-size: clamp(2.5rem, 4.5vw, 5rem); line-height: 1.02; color: var(--text); }
+    .loc-title em { font-style: italic; }
+    .loc-body { font-family: var(--font-sans); font-size: 0.72rem; font-weight: 300; line-height: 2.1; color: var(--muted); margin-top: 28px; }
+    .loc-map  { aspect-ratio: 4/3; background: var(--bg); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    .loc-map-art { position: absolute; inset: 0; }
+    .loc-map-label { font-family: var(--font-serif); font-size: 0.7rem; letter-spacing: 0.2em; color: var(--muted); position: relative; z-index: 1; }
+
+    /* Section: CTA */
+    #section-cta { padding: 160px 80px; text-align: center; position: relative; overflow: hidden; }
+    #section-cta::before { content: 'VERA'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: var(--font-serif); font-size: 28vw; color: rgba(200,169,106,0.025); pointer-events: none; letter-spacing: 0.05em; }
+    .cta-label { display: block; font-family: var(--font-sans); font-size: 0.55rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); margin-bottom: 28px; }
+    .cta-title { font-family: var(--font-serif); font-weight: 300; font-size: clamp(3.5rem, 8vw, 9rem); line-height: 0.9; color: var(--text); position: relative; margin-bottom: 16px; }
+    .cta-title em { font-style: italic; color: var(--accent-lt); }
+    .cta-sub   { font-family: var(--font-sans); font-size: 0.6rem; font-weight: 300; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 52px; }
+    .cta-actions { display: flex; align-items: center; justify-content: center; gap: 24px; }
+    .btn-primary   { font-family: var(--font-sans); font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--bg); background: var(--accent); padding: 16px 52px; text-decoration: none; transition: background 0.3s; display: inline-block; }
+    .btn-primary:hover { background: var(--accent-lt); }
+    .btn-ghost    { font-family: var(--font-sans); font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(200,169,106,0.35); padding-bottom: 2px; transition: color 0.25s, border-color 0.25s; }
+    .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* Footer */
+    #footer { padding: 44px 80px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--rule); }
+    .footer-brand { font-family: var(--font-serif); font-size: 1.1rem; font-weight: 300; letter-spacing: 0.15em; color: var(--text); text-decoration: none; }
+    .footer-links { display: flex; gap: 36px; list-style: none; }
+    .footer-links a { font-family: var(--font-sans); font-size: 0.52rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.25s; }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy { font-family: var(--font-sans); font-size: 0.48rem; color: rgba(245,239,230,0.1); }
+  </style>
+</head>
+<body>
+
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <section id="hero-section">
+
+    <div id="hero-progress-wrap"><div id="hero-progress"></div></div>
+
+    <!-- Video element — engine auto-detects, scrubs directly via currentTime -->
+    <video id="hero-video" muted playsinline preload="auto"
+           src="../assets/video/HouseArchitecture.mp4"></video>
+
+    <!-- Warm cinematic vignette overlay -->
+    <div id="hero-overlay"></div>
+
+    <!-- Warm loader — matches architectural warm white -->
+    <div id="hero-loader">
+      <span class="loader-brand">VeraHomes</span>
+      <span class="loader-line"></span>
+      <span class="loader-sub">Preparing your experience</span>
+    </div>
+
+    <nav id="hero-nav">
+      <a href="#" class="nav-brand">VeraHomes</a>
+      <ul class="nav-links">
+        <li><a href="#section-features">Properties</a></li>
+        <li><a href="#section-location">Location</a></li>
+        <li><a href="#section-cta">Contact</a></li>
+      </ul>
+      <a href="#section-cta" class="nav-cta">Book Viewing</a>
+    </nav>
+
+    <!-- Scene 1 — scroll 0.18 — t~3.8s — establishing exterior shot
+         Upper right — first full view of the property, sky clearing.
+         "SPACE TO LIVE" — understated luxury opener. -->
+    <div class="scene-overlay" data-scene="scene-1">
+      <span class="s1-label"   data-stagger="0">VeraHomes Collection</span>
+      <span class="s1-title"   data-stagger="1">Space<br>to <em>Live.</em></span>
+      <span class="s1-sub"     data-stagger="2">Residences designed<br>for a life well lived.</span>
+    </div>
+
+    <!-- Scene 2 — scroll 0.60 — t~12.7s — interior main space
+         Lower left — room corner, warm light fills right side.
+         Property size / spec detail. -->
+    <div class="scene-overlay" data-scene="scene-2">
+      <span class="s2-label"   data-stagger="0">Residence Area</span>
+      <span class="s2-number"  data-stagger="1">280</span>
+      <span class="s2-unit"    data-stagger="2">square metres</span>
+      <span class="s2-sub"     data-stagger="3">Open plan. Natural light.<br>Built to last a lifetime.</span>
+    </div>
+
+    <!-- Scene 3 — scroll 0.88 — t~18.7s — final interior / outro
+         Lower right — warm room, CTA moment. pointer-events on. -->
+    <div class="scene-overlay" data-scene="scene-3" style="pointer-events:all;">
+      <span class="s3-label"   data-stagger="0">Your home<br><em>awaits you.</em></span>
+      <a href="#section-cta" class="s3-cta" data-stagger="1">Book a Private Viewing</a>
+    </div>
+
+    <div id="hero-scroll-hint">
+      <span class="hint-text">Explore</span>
+      <span class="hint-line"></span>
+    </div>
+
+  </section>
+
+  <div id="below-fold">
+
+    <section id="section-intro">
+      <div class="intro-text">
+        <span class="intro-label gsap-reveal">The Collection</span>
+        <h2 class="intro-title gsap-reveal">Beautifully<br><em>considered</em><br>spaces.</h2>
+        <p class="intro-body gsap-reveal" data-delay="0.1">Each VeraHomes residence is an exercise in restraint — every detail deliberate, every material chosen for warmth and longevity. This is not architecture for attention. It is architecture for living.</p>
+      </div>
+      <div class="intro-stats">
+        <div class="stat-card gsap-reveal"><span class="stat-num">280</span><span class="stat-label">Square metres<br>of living space</span></div>
+        <div class="stat-card gsap-reveal" data-delay="0.06"><span class="stat-num">4</span><span class="stat-label">Bedrooms<br>with en-suite</span></div>
+        <div class="stat-card gsap-reveal" data-delay="0.12"><span class="stat-num">3</span><span class="stat-label">Private<br>terraces</span></div>
+        <div class="stat-card gsap-reveal" data-delay="0.18"><span class="stat-num">A+</span><span class="stat-label">Energy<br>efficiency rating</span></div>
+      </div>
+    </section>
+
+    <section id="section-features">
+      <div class="features-header">
+        <h2 class="features-title gsap-reveal">What is<br><em>included.</em></h2>
+        <span class="features-count gsap-reveal">08 key features</span>
+      </div>
+      <ul class="feature-list">
+        <li class="feature-item gsap-reveal"><span class="feature-name">Open Plan Living</span><span class="feature-detail">Architecturally designed</span></li>
+        <li class="feature-item gsap-reveal" data-delay="0.04"><span class="feature-name">Floor-to-Ceiling Glass</span><span class="feature-detail">Double-glazed, thermally broken</span></li>
+        <li class="feature-item gsap-reveal" data-delay="0.08"><span class="feature-name">Private Garden</span><span class="feature-detail">South-facing, landscaped</span></li>
+        <li class="feature-item gsap-reveal" data-delay="0.12"><span class="feature-name">Chef's Kitchen</span><span class="feature-detail">Miele appliances, stone surfaces</span></li>
+        <li class="feature-item gsap-reveal" data-delay="0.16"><span class="feature-name">Smart Home Integration</span><span class="feature-detail">Lighting, climate, security</span></li>
+        <li class="feature-item gsap-reveal" data-delay="0.20"><span class="feature-name">Underground Parking</span><span class="feature-detail">Two allocated spaces</span></li>
+        <li class="feature-item gsap-reveal" data-delay="0.24"><span class="feature-name">Concierge Service</span><span class="feature-detail">24-hour on-site</span></li>
+        <li class="feature-item gsap-reveal" data-delay="0.28"><span class="feature-name">10-Year Structural Warranty</span><span class="feature-detail">NHBC certified</span></li>
+      </ul>
+    </section>
+
+    <section id="section-location">
+      <div class="location-inner">
+        <div class="loc-copy">
+          <span class="loc-label gsap-reveal">The Location</span>
+          <h2 class="loc-title gsap-reveal">Placed <em>where<br>it matters.</em></h2>
+          <p class="loc-body gsap-reveal" data-delay="0.1">Minutes from the city centre. Surrounded by green space, excellent schools, and the kind of neighbourhood that feels settled rather than arriving. VeraHomes sits at the intersection of convenience and calm.</p>
+        </div>
+        <div class="loc-map gsap-reveal" data-delay="0.08">
+          <svg class="loc-map-art" viewBox="0 0 600 450" xmlns="http://www.w3.org/2000/svg">
+            <rect width="600" height="450" fill="#1a1714"/>
+            <!-- Warm abstract location art — grid lines suggest urban map -->
+            <g stroke="rgba(200,169,106,0.06)" stroke-width="1">
+              <line x1="0" y1="100" x2="600" y2="100"/>
+              <line x1="0" y1="200" x2="600" y2="200"/>
+              <line x1="0" y1="300" x2="600" y2="300"/>
+              <line x1="0" y1="400" x2="600" y2="400"/>
+              <line x1="150" y1="0" x2="150" y2="450"/>
+              <line x1="300" y1="0" x2="300" y2="450"/>
+              <line x1="450" y1="0" x2="450" y2="450"/>
+            </g>
+            <!-- Roads -->
+            <rect x="140" y="0" width="20" height="450" fill="rgba(200,169,106,0.04)"/>
+            <rect x="0" y="90" width="600" height="20" fill="rgba(200,169,106,0.04)"/>
+            <rect x="280" y="0" width="40" height="450" fill="rgba(200,169,106,0.06)"/>
+            <rect x="0" y="190" width="600" height="30" fill="rgba(200,169,106,0.06)"/>
+            <!-- Location pin -->
+            <circle cx="300" cy="225" r="50" fill="none" stroke="rgba(200,169,106,0.12)" stroke-width="1"/>
+            <circle cx="300" cy="225" r="30" fill="none" stroke="rgba(200,169,106,0.25)" stroke-width="1"/>
+            <circle cx="300" cy="225" r="6" fill="#c8a96a"/>
+            <line x1="300" y1="219" x2="300" y2="160" stroke="rgba(200,169,106,0.4)" stroke-width="0.5" stroke-dasharray="3,3"/>
+            <!-- Labels -->
+            <text x="310" y="156" fill="rgba(200,169,106,0.5)" font-size="8" font-family="sans-serif" letter-spacing="2">VERAHOMES</text>
+            <text x="40" y="180" fill="rgba(245,239,230,0.1)" font-size="7" font-family="sans-serif">City Centre  2.4km</text>
+            <text x="400" y="280" fill="rgba(245,239,230,0.1)" font-size="7" font-family="sans-serif">Park  0.3km</text>
+          </svg>
+          <span class="loc-map-label">Prime Central Location</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-cta">
+      <span class="cta-label gsap-reveal">Private Viewings Available</span>
+      <h2 class="cta-title gsap-reveal">Your <em>home</em><br>is waiting.</h2>
+      <p class="cta-sub gsap-reveal">A limited collection. No compromises.</p>
+      <div class="cta-actions gsap-reveal">
+        <a href="#" class="btn-primary">Request a Viewing</a>
+        <a href="#section-features" class="btn-ghost">View Specifications</a>
+      </div>
+    </section>
+
+    <footer id="footer">
+      <a href="#" class="footer-brand">VeraHomes</a>
+      <ul class="footer-links">
+        <li><a href="#">Properties</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="#">Privacy</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 VeraHomes</span>
+    </footer>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       GSAP CONFIG — VeraHomes v1
+       Video-mode (no canvas). Auto video duration via probe.
+       scrubSmooth: true → scrub:true for direct video sync.
+       21.3s architectural fly-through.
+  ══════════════════════════════════════════════════════════════ -->
+  <script>
+  window.GSAP_CONFIG = {
+    // No frameSrc/frameCount → engine uses video element directly
+    videoSrc: '../assets/video/HouseArchitecture.mp4',
+
+    // scrub:true for video (direct sync, no GSAP animation tail)
+    scrubSmooth: true,
+
+    scrollBudget: '450%',
+    fadeRange:    0.14,
+    approachTolerance: 0.030,
+    dwellTime:    5.0,
+
+    snapToScenes: true,
+    snapDelay:    0.20,
+
+    waypoints: [0.40, 0.72],
+
+    // Estimated videoMap for architectural fly-through.
+    // Architecture videos typically: exterior approach → entry → living → rooms → finale.
+    // Adjust timing after watching with console.log(video.currentTime) at each visual beat.
+    videoMap: [
+      { scroll: 0.00, time: 0.0,  label: 'opening-exterior'   },
+      { scroll: 0.18, time: 3.8,  label: 'approach-exterior'  },
+      { scroll: 0.32, time: 6.8,  label: 'entry-threshold'    },
+      { scroll: 0.48, time: 10.2, label: 'interior-reveal'    },
+      { scroll: 0.65, time: 13.8, label: 'main-living-space'  },
+      { scroll: 0.78, time: 16.6, label: 'secondary-rooms'    },
+      { scroll: 0.90, time: 19.1, label: 'finale-room'        },
+      { scroll: 1.00, time: 21.3, label: 'end'                }
+    ],
+
+    scenes: [
+      { id: 'scene-1', scroll: 0.18 },  // exterior approach — upper right
+      { id: 'scene-2', scroll: 0.60 },  // main interior — lower left
+      { id: 'scene-3', scroll: 0.88 }   // final room + CTA — lower right
+    ]
+  };
+  </script>
+
+  <script>
+// ============================================================
+// ENGINE START — scroll-gsap.js v5.2.4
+// DO NOT MODIFY — copy verbatim between ENGINE START / ENGINE END
+// Requires: GSAP + ScrollTrigger loaded before this script
+// Config:   window.GSAP_CONFIG defined before this script
+// Changelog: engine/CHANGELOG.md
+//
+// v5.2.2 patches:
+//   1. scrub: true for canvas mode — eliminates post-scroll animation tail.
+//      Video no longer "plays" for milliseconds after scroll stops.
+//      Number scrub (smoothing) only applies to video fallback mode.
+//   2. Approach hold — within approachTolerance of a scene.scroll,
+//      text opacity = 1 unconditionally. No dwell required. Text appears
+//      as user approaches the scene and holds through snap + dwell.
+//   3. Near-instant snap — duration { min: 0.02, max: 0.04 }.
+//      Snap completes in <40ms; frame animation during snap is invisible.
+//      snapInProgress flag freezes frame at snap start, jumps to
+//      destination on complete.
+//   4. dwellTime default raised to 4.0s.
+//   5. Children (data-stagger) now also get approach hold.
+// ============================================================
+(function () {
+  'use strict';
+
+  // ── GSAP_CONFIG shape (v5.2.2) ────────────────────────────────────────────
+  // window.GSAP_CONFIG = {
+  //
+  //   // Frame-by-frame (v5.2 primary)
+  //   frameSrc:    "../assets/images/frames/",
+  //   frameCount:  241,
+  //   fps:         30,          // for reference only; engine uses frameCount
+  //
+  //   // Video fallback
+  //   videoSrc:    "../assets/video/filename.mp4",
+  //
+  //   scrollBudget:     "450%",
+  //   scrubSmooth:      1,       // VIDEO fallback only. Canvas always uses scrub:true.
+  //   fadeRange:        0.18,    // fade curve AFTER approach/dwell zone
+  //   approachTolerance: 0.035,  // within this of scene.scroll → opacity 1
+  //   dwellTime:        4.0,     // seconds text holds after snap
+  //
+  //   snapToScenes:  true,
+  //   snapDelay:     0.15,
+  //
+  //   waypoints: [0.45, 0.60],
+  //
+  //   // [v5.2.4] Extreme value clamp (optional, default 0.10)
+  //   maxProgressJump: 0.10,  // max progress delta per RAF frame
+  //                           // only fires on extreme flings / Page Down
+  //   // videoDuration auto-detected from video.duration; no config needed
+  //
+  //   videoMap: [ ... ],
+  //   scenes:   [ ... ]
+  // };
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const cfg = window.GSAP_CONFIG;
+  if (!cfg) { console.error('[scroll-gsap] window.GSAP_CONFIG not found'); return; }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // [v5.2.4] Auto-detect video duration via hidden probe element.
+  // Reads video.duration from loadedmetadata — no cfg.videoDuration needed.
+  // mapToVideoTime() picks this up as soon as metadata is ready (~1-2s).
+  let detectedVideoDuration = null;
+  (function probeVideoDuration() {
+    if (!cfg.videoSrc) return;
+    var probe = document.createElement('video');
+    probe.preload = 'metadata';
+    probe.muted   = true;
+    probe.src     = cfg.videoSrc;
+    probe.addEventListener('loadedmetadata', function() {
+      detectedVideoDuration = probe.duration;
+      probe.removeAttribute('src');
+      probe.load(); // release resource
+    }, { once: true });
+  })();
+
+  const heroSection = document.getElementById('hero-section');
+  const progressBar = document.getElementById('hero-progress');
+  const scrollHint  = document.getElementById('hero-scroll-hint');
+  const nav         = document.getElementById('hero-nav');
+
+  // ── Mode detection ────────────────────────────────────────────────────────
+  const useFrames = !!(cfg.frameSrc && cfg.frameCount);
+  let   canvas, ctx, frames = [], framesLoaded = 0;
+  let   video;
+  let   st = null;           // ScrollTrigger reference
+  let   snapInProgress    = false;
+  let   snapDestProgress  = null;
+  let   displayProgress   = 0;   // [v5.2.4] canvas draw position (extreme-value clamped)
+  let   targetProgress    = 0;   // [v5.2.4] real scroll position from ST
+
+  // ── Frame preloader ───────────────────────────────────────────────────────
+  function preloadFrames(onReady) {
+    canvas = document.getElementById('hero-canvas');
+    ctx    = canvas ? canvas.getContext('2d') : null;
+    const loader = document.getElementById('hero-frame-loader');
+
+    if (!canvas || !ctx) {
+      initVideoFallback(onReady);
+      return;
+    }
+
+    canvas.style.opacity = '0';
+
+    function resize() {
+      canvas.width  = heroSection.offsetWidth;
+      canvas.height = heroSection.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', () => {
+      resize();
+      if (st && !snapInProgress) drawFrame(st.progress);
+    });
+
+    const total = cfg.frameCount;
+    const pad   = String(total).length;
+    const ext   = cfg.frameExt || 'jpg';
+
+    for (let i = 1; i <= total; i++) {
+      const img = new Image();
+      img.src   = cfg.frameSrc + 'frame_' + String(i).padStart(pad, '0') + '.' + ext;
+      img.onload = () => {
+        framesLoaded++;
+        if (loader) {
+          const pct = Math.round(framesLoaded / total * 100);
+          loader.textContent = pct + '%';
+          loader.style.setProperty('--pct', pct + '%');
+        }
+        if (framesLoaded === total) {
+          if (loader) {
+            gsap.to(loader, { opacity: 0, duration: 0.4, onComplete: () => {
+              loader.style.display = 'none';
+              gsap.to(canvas, { opacity: 1, duration: 0.4 });
+            }});
+          } else {
+            gsap.to(canvas, { opacity: 1, duration: 0.3 });
+          }
+          onReady();
+        }
+      };
+      img.onerror = () => { framesLoaded++; if (framesLoaded === total) onReady(); };
+      frames.push(img);
+    }
+  }
+
+  // ── Draw frame ────────────────────────────────────────────────────────────
+  function drawFrame(progress) {
+    if (!ctx || !frames.length) return;
+    const idx = Math.min(frames.length - 1, Math.round(progress * (frames.length - 1)));
+    const f   = frames[idx];
+    if (f && f.complete && f.naturalWidth) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const vR = f.naturalWidth  / f.naturalHeight;
+      const cR = canvas.width    / canvas.height;
+      let sw, sh, sx, sy;
+      if (vR > cR) { sh = canvas.height; sw = sh * vR; sx = (canvas.width - sw) / 2; sy = 0; }
+      else         { sw = canvas.width;  sh = sw / vR; sx = 0; sy = (canvas.height - sh) / 2; }
+      ctx.drawImage(f, sx, sy, sw, sh);
+    }
+  }
+
+  // ── Video fallback ────────────────────────────────────────────────────────
+  function initVideoFallback(onReady) {
+    video = document.getElementById('hero-video');
+    if (video) {
+      video.addEventListener('loadedmetadata', () => {
+        video.play().then(() => video.pause()).catch(() => {});
+        onReady();
+      });
+      if (video.readyState >= 1) onReady();
+    } else { onReady(); }
+  }
+
+  // ── videoMap interpolation ────────────────────────────────────────────────
+  // [v5.2.3] cfg.videoDuration overrides the last videoMap entry's time.
+  // Fixes "video stops N seconds early" when frame extraction was incomplete.
+  function mapToVideoTime(progress) {
+    const map = cfg.videoMap;
+    if (!map || !map.length) return 0;
+    if (progress <= map[0].scroll) return map[0].time;
+    const last = map[map.length - 1];
+    if (progress >= last.scroll) {
+      // Use auto-detected duration, then cfg.videoDuration, then last anchor time
+      const fullDuration = detectedVideoDuration || cfg.videoDuration || last.time;
+      if (fullDuration > last.time && last.scroll < 1) {
+        const t = (progress - last.scroll) / (1 - last.scroll);
+        return last.time + t * (fullDuration - last.time);
+      }
+      return fullDuration;
+    }
+    for (let i = 0; i < map.length - 1; i++) {
+      const a = map[i], b = map[i + 1];
+      if (progress >= a.scroll && progress <= b.scroll) {
+        const t = (progress - a.scroll) / (b.scroll - a.scroll);
+        return a.time + t * (b.time - a.time);
+      }
+    }
+    return 0;
+  }
+
+  // ── Dwell system ──────────────────────────────────────────────────────────
+  const dwellState   = {};
+  const dwellSeconds = cfg.dwellTime !== undefined ? cfg.dwellTime : 4.0;
+
+  function onSnapEngaged(progress) {
+    if (progress === undefined || progress === null) return;
+    const scenes    = cfg.scenes || [];
+    const tolerance = 0.025;
+    scenes.forEach(scene => {
+      if (Math.abs(progress - scene.scroll) < tolerance) {
+        dwellState[scene.id] = { dwellEnd: performance.now() + dwellSeconds * 1000 };
+      }
+    });
+  }
+
+  // ── Scene opacity ─────────────────────────────────────────────────────────
+  // v5.2.2: Approach hold — near a scene, opacity = 1 regardless of dwell.
+  // Ensures text is visible as the user arrives AND holds through snap+dwell.
+  function updateScenes(progress) {
+    const fadeRange         = cfg.fadeRange         || 0.18;
+    const approachTolerance = cfg.approachTolerance || 0.035;
+    const now               = performance.now();
+
+    (cfg.scenes || []).forEach(scene => {
+      const el = document.querySelector(`[data-scene="${scene.id}"]`);
+      if (!el) return;
+
+      const dist       = Math.abs(progress - scene.scroll);
+      const isApproach = dist < approachTolerance;
+      const dwell      = dwellState[scene.id];
+      const isDwelling = dwell && now < dwell.dwellEnd;
+
+      // Approach hold + dwell both force opacity 1
+      const opacity = (isApproach || isDwelling)
+        ? 1
+        : Math.max(0, 1 - dist / fadeRange);
+
+      el.style.opacity = opacity;
+
+      const children = el.querySelectorAll('[data-stagger]');
+      children.forEach(child => {
+        const lag    = parseFloat(child.dataset.stagger || 0) * 0.010;
+        const delayed = Math.max(0, dist - lag);
+        const childOp = (isApproach || isDwelling)
+          ? 1
+          : Math.max(0, 1 - delayed / fadeRange);
+        child.style.opacity = childOp;
+      });
+    });
+  }
+
+  // ── Build snap points ─────────────────────────────────────────────────────
+  function buildSnapPoints() {
+    if (!cfg.snapToScenes) return false;
+
+    const sceneScrolls    = (cfg.scenes    || []).map(s => s.scroll);
+    const waypointScrolls = (cfg.waypoints || []);
+    const allPoints       = [0, ...sceneScrolls, ...waypointScrolls, 1];
+
+    const seen = new Set();
+    const points = allPoints
+      .map(p => Math.round(p * 1000) / 1000)
+      .filter(p => { if (seen.has(p)) return false; seen.add(p); return true; })
+      .sort((a, b) => a - b);
+
+    return {
+      snapTo:   points,
+      // [v5.2.2] Near-instant snap — <40ms. Frame animation during snap is invisible.
+      duration: { min: 0.02, max: 0.04 },
+      delay:    cfg.snapDelay !== undefined ? cfg.snapDelay : 0.15,
+      ease:     'none',
+      onStart: () => {
+        // Freeze frame at snap start — prevents "video plays" during snap ease
+        snapInProgress = true;
+        if (st) {
+          // Find nearest snap point = destination
+          const p = st.progress;
+          snapDestProgress = points.reduce((a, b) =>
+            Math.abs(b - p) < Math.abs(a - p) ? b : a
+          );
+          drawFrame(snapDestProgress);
+        }
+      },
+      onComplete: () => {
+        snapInProgress   = false;
+        snapDestProgress = null;
+        if (st) {
+          // Sync display state to real progress after snap lands
+          displayProgress = st.progress;
+          targetProgress  = st.progress;
+          drawFrame(st.progress);
+          onSnapEngaged(st.progress);
+        }
+      }
+    };
+  }
+
+  // ── Init ScrollTrigger ────────────────────────────────────────────────────
+  function initScrollTrigger() {
+    st = ScrollTrigger.create({
+      trigger: heroSection,
+      start:   'top top',
+      end:     `+=${cfg.scrollBudget || '450%'}`,
+      pin:     true,
+
+      // [v5.2.2] Canvas: scrub:true = direct sync, zero lag.
+      // Video fallback: use scrubSmooth (default 1s).
+      scrub: useFrames
+        ? true
+        : (cfg.scrubSmooth !== undefined ? cfg.scrubSmooth : 1),
+
+      snap:     buildSnapPoints(),
+
+      onUpdate: (self) => {
+        // [v5.2.4] Canvas: update targetProgress only. GSAP ticker handles
+        // drawFrame with optional extreme-value clamp. Video: direct update.
+        targetProgress = self.progress;
+        if (!snapInProgress) {
+          if (!useFrames && video) {
+            video.currentTime = mapToVideoTime(self.progress);
+          }
+        }
+        updateScenes(self.progress);
+        if (progressBar) progressBar.style.width = (self.progress * 100) + '%';
+        if (scrollHint)  scrollHint.style.opacity = self.progress < 0.04 ? 1 : 0;
+      }
+    });
+
+    // Below-fold reveals
+    document.querySelectorAll('.gsap-reveal').forEach(el => {
+      const delay = parseFloat(el.dataset.delay || 0);
+      gsap.fromTo(el,
+        { opacity: 0, y: 60 },
+        {
+          opacity: 1, y: 0, duration: 1, delay, ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 85%', toggleActions: 'play none none reverse' }
+        }
+      );
+    });
+
+    // [v5.2.4] GSAP ticker — advances displayProgress toward targetProgress
+    // at max maxProgressJump per frame. Normal scroll: delta < jump → instant.
+    // Extreme fling (Page Down, momentum): delta > jump → capped advance.
+    // Ticker keeps running between scroll events so display always catches up.
+    if (useFrames) {
+      var maxJump = cfg.maxProgressJump !== undefined ? cfg.maxProgressJump : 0.10;
+      gsap.ticker.add(function() {
+        if (snapInProgress) return; // snap manages its own drawing
+        var delta = targetProgress - displayProgress;
+        var absDelta = delta < 0 ? -delta : delta;
+        if (absDelta > 0.0005) {
+          if (absDelta > maxJump) {
+            displayProgress += (delta > 0 ? 1 : -1) * maxJump;
+          } else {
+            displayProgress = targetProgress;
+          }
+          drawFrame(displayProgress);
+        }
+      });
+    }
+
+    // Navbar
+    if (nav) {
+      ScrollTrigger.create({
+        trigger: heroSection,
+        start:   'top top',
+        end:     `+=${cfg.scrollBudget || '450%'}`,
+        onUpdate: (self) => { nav.classList.toggle('nav-scrolled', self.progress > 0.05); }
+      });
+    }
+  }
+
+
+  // ── Start ─────────────────────────────────────────────────────────────────────────
+  if (useFrames) {
+    preloadFrames(initScrollTrigger);
+  } else {
+    initVideoFallback(initScrollTrigger);
+  }
+
+})();
+// ENGINE END — scroll-gsap.js v5.2.4
+// ============================================================
+
+  </script>
+
+  <script>
+  (function() {
+    // Cursor
+    var dot = document.getElementById('cursor-dot'), ring = document.getElementById('cursor-ring');
+    if (dot && ring) {
+      var mx = 0, my = 0;
+      document.addEventListener('mousemove', function(e) { mx = e.clientX; my = e.clientY; });
+      gsap.ticker.add(function() {
+        gsap.set(dot, { x: mx, y: my });
+        gsap.to(ring, { x: mx, y: my, duration: 0.18, ease: 'power2.out' });
+      });
+      document.querySelectorAll('a, .stat-card, .feature-item').forEach(function(el) {
+        el.addEventListener('mouseenter', function() { gsap.to(ring, { width: 48, height: 48, borderColor: 'rgba(200,169,106,0.7)', duration: 0.22 }); });
+        el.addEventListener('mouseleave', function() { gsap.to(ring, { width: 28, height: 28, borderColor: 'rgba(200,169,106,0.4)', duration: 0.22 }); });
+      });
+    }
+
+    // Video ready — fade in from loader
+    var vid = document.getElementById('hero-video');
+    var loader = document.getElementById('hero-loader');
+    if (vid) {
+      function onReady() {
+        vid.classList.add('ready');
+        if (loader) gsap.to(loader, { opacity: 0, duration: 0.7, onComplete: function() { loader.style.display = 'none'; } });
+      }
+      if (vid.readyState >= 2) { onReady(); }
+      else { vid.addEventListener('canplay', onReady, { once: true }); }
+    }
+
+    // Stat card hover lift
+    document.querySelectorAll('.stat-card').forEach(function(c) {
+      c.addEventListener('mouseenter', function() { gsap.to(c, { y: -5, duration: 0.28, ease: 'power2.out' }); });
+      c.addEventListener('mouseleave', function() { gsap.to(c, { y: 0,  duration: 0.28 }); });
+    });
+
+    // Feature item number reveal
+    var items = document.querySelectorAll('.feature-item');
+    items.forEach(function(item, idx) {
+      var numEl = document.createElement('span');
+      numEl.style.cssText = 'font-family:var(--font-serif);font-size:0.65rem;color:rgba(200,169,106,0.25);margin-right:20px;letter-spacing:0.1em;';
+      numEl.textContent = String(idx + 1).padStart(2, '0');
+      item.prepend(numEl);
+    });
+
+    // Below-fold scroll reveals
+    document.querySelectorAll('.gsap-reveal').forEach(function(el) {
+      var delay = parseFloat(el.dataset.delay || 0);
+      gsap.fromTo(el,
+        { opacity: 0, y: 50 },
+        { opacity: 1, y: 0, duration: 1.1, delay: delay, ease: 'power2.out',
+          scrollTrigger: { trigger: el, start: 'top 86%', toggleActions: 'play none none reverse' }
+        }
+      );
+    });
+
+    // CTA headline scale
+    var ctaTitle = document.querySelector('.cta-title');
+    if (ctaTitle) {
+      gsap.fromTo(ctaTitle, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 1.5, ease: 'expo.out',
+        scrollTrigger: { trigger: ctaTitle, start: 'top 82%' }
+      });
+    }
+  })();
+  </script>
+
+</body>
+</html>

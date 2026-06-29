@@ -1,132 +1,194 @@
 """
-setup.py — Project asset downloader + keyframe extractor
-Usage: python setup.py [drive_folder_link]
-       python setup.py  (will prompt for link if not provided)
+setup.py v5.1 — Keyframe extractor + Motion analyzer for 3D Dynamic Builder pipeline v5
+Usage:  python setup.py "builds/[project-name]"
+        Run from inside the v5/ root folder.
 
 What it does:
-  1. Downloads everything from your shared Drive folder
-  2. Maps files into correct local folders (video/ 3d/ images/)
-  3. Extracts keyframes scaled to video length (1 per 5s, min 9, max 20)
+  1. Extracts keyframes — scene detection (ffmpeg) or interval (opencv fallback)
+     Filenames encode timestamps: frame_03_t08.7s.jpg
+  2. Analyzes motion — frame-by-frame pixel differencing via opencv
+     Outputs: logs/motion_profile.json with per-frame motion scores
+  3. Generates a suggested videoMap — slow segments get more scroll budget,
+     fast segments get less. Claude reads this JSON to build GSAP_CONFIG instead
+     of guessing from static frames alone.
+
+Changelog:
+  v5.0 — scene detection + timestamp filenames (no Drive download)
+  v5.1 — added motion analysis + auto-suggested videoMap in logs/motion_profile.json
+
+No Drive download. Place your video in assets/video/ first.
 """
 
-import os, sys, shutil, subprocess
+import os
+import sys
+import json
+import subprocess
+import shutil
 
-# ── Install dependencies ──────────────────────────────────────────────────────
-def install(pkg):
-    # Bootstrap pip if missing, then install
-    subprocess.call([sys.executable, "-m", "ensurepip", "--upgrade"])
-    subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "-q"])
-
-try:
-    import gdown
-except ImportError:
-    print("Installing gdown..."); install("gdown"); import gdown
-
-try:
-    import cv2
-except ImportError:
-    print("Installing opencv..."); install("opencv-python"); import cv2
-
-# ── Config ────────────────────────────────────────────────────────────────────
+# ── Paths ─────────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-# argv[2] = project folder path (passed by SETUP.bat). Fall back to script dir if missing.
-PROJECT_DIR  = os.path.abspath(sys.argv[2].rstrip("\\/")) if len(sys.argv) > 2 else SCRIPT_DIR
-TEMP_DIR     = os.path.join(PROJECT_DIR, "_drive_download")
+PROJECT_DIR  = os.path.abspath(sys.argv[1].rstrip("\\/")) if len(sys.argv) > 1 else None
+if not PROJECT_DIR:
+    print("\n  Usage: python setup.py \"builds/[project-name]\"")
+    sys.exit(1)
+
 VIDEO_DIR    = os.path.join(PROJECT_DIR, "assets", "video")
-MODEL_DIR    = os.path.join(PROJECT_DIR, "assets", "3d")
-IMAGE_DIR    = os.path.join(PROJECT_DIR, "assets", "images")
 KEYFRAME_DIR = os.path.join(PROJECT_DIR, "assets", "images", "keyframes")
+LOGS_DIR     = os.path.join(PROJECT_DIR, "logs")
+MOTION_FILE  = os.path.join(LOGS_DIR, "motion_profile.json")
 
-VIDEO_EXTS  = {".mp4", ".mov", ".webm"}
-MODEL_EXTS  = {".glb", ".gltf", ".fbx"}
-IMAGE_EXTS  = {".png", ".jpg", ".jpeg", ".webp", ".avif"}
-MIN_FRAMES = 9   # always at least 9 frames
-MAX_FRAMES = 20  # never more than 20 frames
-TARGET_INTERVAL_SECONDS = 5  # aim for one frame every 5 seconds
-
-def calc_keyframe_pcts(duration_seconds):
-    """Scale frame count to video length. Short videos get denser coverage."""
-    n = int(duration_seconds / TARGET_INTERVAL_SECONDS)
-    n = max(MIN_FRAMES, min(MAX_FRAMES, n))
-    # Evenly spaced, avoiding 0% (often black) and 100% (often black)
-    return [round((i + 1) / (n + 1), 3) for i in range(n)]
+VIDEO_EXTS   = {".mp4", ".mov", ".webm"}
+MIN_FRAMES   = 9
+MAX_FRAMES   = 20
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-def ensure_dirs():
-    for d in [VIDEO_DIR, MODEL_DIR, IMAGE_DIR, KEYFRAME_DIR]:
-        os.makedirs(d, exist_ok=True)
-
 def ext(f):
     return os.path.splitext(f)[1].lower()
 
-def map_file(src_path):
-    """Move a downloaded file into the correct assets/ subfolder."""
-    e = ext(src_path)
-    fname = os.path.basename(src_path)
-    if e in VIDEO_EXTS:
-        dest = os.path.join(VIDEO_DIR, fname)
-    elif e in MODEL_EXTS:
-        dest = os.path.join(MODEL_DIR, fname)
-    elif e in IMAGE_EXTS:
-        dest = os.path.join(IMAGE_DIR, fname)
-    else:
-        return  # skip unknown types
-    if not os.path.exists(dest):
-        shutil.move(src_path, dest)
-        print(f"  ✓ {fname} → assets/{os.path.relpath(dest, os.path.join(SCRIPT_DIR,'assets'))}")
-    else:
-        print(f"  EXISTS  {fname}")
+def ensure_dirs():
+    os.makedirs(KEYFRAME_DIR, exist_ok=True)
+    os.makedirs(LOGS_DIR, exist_ok=True)
 
-def walk_and_map(folder):
-    """Recursively find all files and map them."""
-    for root, _, files in os.walk(folder):
-        for f in files:
-            if not f.startswith("."):
-                map_file(os.path.join(root, f))
-
-def extract_keyframes():
-    """Extract 5 frames from the first video found in assets/video/."""
+def find_video():
+    if not os.path.isdir(VIDEO_DIR):
+        return None
     videos = [f for f in os.listdir(VIDEO_DIR) if ext(f) in VIDEO_EXTS]
-    if not videos:
-        print("\n  No video found — skipping keyframe extraction.")
-        return
-    video_path = os.path.join(VIDEO_DIR, videos[0])
-    cap = cv2.VideoCapture(video_path)
-    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps   = cap.get(cv2.CAP_PROP_FPS) or 30
+    return os.path.join(VIDEO_DIR, videos[0]) if videos else None
+
+def has_ffmpeg():
+    return shutil.which("ffmpeg") is not None
+
+def has_ffprobe():
+    return shutil.which("ffprobe") is not None
+
+# ── Get video duration ────────────────────────────────────────────────────────
+def get_duration(video_path):
+    if has_ffprobe():
+        try:
+            result = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=noprint_wrappers=1:nokey=1", video_path],
+                capture_output=True, text=True, timeout=15
+            )
+            return float(result.stdout.strip())
+        except Exception:
+            pass
+    try:
+        import cv2
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30
+        frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        cap.release()
+        return frames / fps if fps else 0
+    except Exception:
+        return 0
+
+# ── ffmpeg scene detection ────────────────────────────────────────────────────
+def extract_scene_frames(video_path):
+    print("\n  Detecting scene changes with ffmpeg...")
+    duration = get_duration(video_path)
+    print(f"  Duration: {duration:.1f}s")
+
+    cmd = [
+        "ffmpeg", "-i", video_path,
+        "-vf", "select='gt(scene,0.35)',showinfo",
+        "-vsync", "vfr", "-q:v", "3", "-f", "null", "-"
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        timestamps = []
+        for line in result.stderr.split("\n"):
+            if "pts_time:" in line:
+                try:
+                    t = float(line.split("pts_time:")[1].split()[0])
+                    timestamps.append(round(t, 1))
+                except (ValueError, IndexError):
+                    pass
+
+        timestamps = sorted(set([0.0] + timestamps))
+        if duration > 0 and timestamps[-1] < duration * 0.9:
+            timestamps.append(round(duration * 0.95, 1))
+
+        if len(timestamps) < MIN_FRAMES:
+            timestamps = _interval_timestamps(duration)
+        elif len(timestamps) > MAX_FRAMES:
+            step = len(timestamps) / MAX_FRAMES
+            timestamps = [timestamps[int(i * step)] for i in range(MAX_FRAMES)]
+
+        print(f"  Found {len(timestamps)} scene points — extracting frames...")
+        return _extract_at_timestamps(video_path, timestamps)
+
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        print("  ffmpeg unavailable — falling back to interval extraction...")
+        return extract_interval_frames(video_path)
+
+def _interval_timestamps(duration):
+    n = max(MIN_FRAMES, min(MAX_FRAMES, int(duration / 5)))
+    return [round((i + 1) / (n + 1) * duration, 1) for i in range(n)]
+
+def _extract_at_timestamps(video_path, timestamps):
+    saved = []
+    for i, t in enumerate(timestamps, 1):
+        name = f"frame_{i:02d}_t{t:.1f}s.jpg"
+        out  = os.path.join(KEYFRAME_DIR, name)
+        cmd  = [
+            "ffmpeg", "-ss", str(t), "-i", video_path,
+            "-frames:v", "1", "-q:v", "3", "-vf", "scale=960:-1",
+            out, "-y"
+        ]
+        result = subprocess.run(cmd, capture_output=True, timeout=30)
+        if result.returncode == 0 and os.path.exists(out):
+            print(f"  ✓ {name}")
+            saved.append(out)
+        else:
+            print(f"  ✗ frame at t={t}s failed")
+    return saved
+
+# ── opencv fallback ───────────────────────────────────────────────────────────
+def extract_interval_frames(video_path):
+    try:
+        import cv2
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install",
+                               "opencv-python", "-q", "--break-system-packages"])
+        import cv2
+
+    cap      = cv2.VideoCapture(video_path)
+    total    = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps      = cap.get(cv2.CAP_PROP_FPS) or 30
     duration = total / fps
-    if total == 0:
-        print("  Could not read video frames.")
-        cap.release(); return
-    pcts = calc_keyframe_pcts(duration)
-    print(f"\n  Video: {duration:.1f}s → extracting {len(pcts)} keyframes from {videos[0]}...")
-    for i, pct in enumerate(pcts, 1):
-        frame_num = int(total * pct)
+    timestamps = _interval_timestamps(duration)
+    saved = []
+
+    for i, t in enumerate(timestamps, 1):
+        frame_num = int(t * fps)
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
         ret, frame = cap.read()
         if ret:
-            name = f"frame_{i:02d}_pct{int(pct*100):03d}.jpg"
+            name = f"frame_{i:02d}_t{t:.1f}s.jpg"
             out  = os.path.join(KEYFRAME_DIR, name)
             cv2.imwrite(out, frame)
             print(f"  ✓ {name}")
+            saved.append(out)
+
     cap.release()
+    return saved
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-def main():
-    print("\n  Asset Setup\n  ===========")
-
-    # Get Drive link
-    link = sys.argv[1] if len(sys.argv) > 1 else ""
-    if not link:
-        link = input("\n  Paste your Google Drive folder link: ").strip()
-    if not link:
-        print("  No link provided. Exiting."); return
-
-    ensure_dirs()
-
-    # Check if assets already present
-    existing_videos = [f for f in os.listdir(VIDEO_DIR) if ext(f) in VIDEO_EXTS]
-    if existing_videos:
-        print(f"\n  Video already present ({existing_videos[0]}) — skipping download.")
-    elif not link:
-     
+# ── Motion analysis (v5.1) ────────────────────────────────────────────────────
+#
+# Computes frame-by-frame pixel difference (motion intensity) for the entire video.
+# This tells us WHERE the video is fast vs slow — independent of scene cuts.
+#
+# Algorithm:
+#   1. Sample every N frames (~10 samples/second for speed)
+#   2. Compute abs diff between consecutive grayscale frames, resized to 320px
+#   3. Normalize 0–1 (1 = max motion observed in this video)
+#   4. Smooth with a 5-sample sliding window to reduce flicker noise
+#   5. Generate suggested videoMap:
+#      - Slow regions (low motion) → more scroll budget
+#        Viewer needs time to appreciate subtle floating/floating layers
+#      - Fast regions (high motion) → less scroll budget
+#        Content is already dramatic; don't drag it out
+#
+# This inverted relationship is intentio
